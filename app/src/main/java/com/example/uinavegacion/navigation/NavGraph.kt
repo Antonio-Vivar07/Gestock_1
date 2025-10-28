@@ -1,30 +1,30 @@
 package com.example.uinavegacion.navigation
 
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
-import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.navArgument
 import com.example.uinavegacion.ui.components.AppDrawer
 import com.example.uinavegacion.ui.components.AppTopBar
 import com.example.uinavegacion.ui.components.defaultDrawerItems
 import com.example.uinavegacion.ui.screen.*
+import com.example.uinavegacion.viewmodel.AppViewModelProvider
 import com.example.uinavegacion.viewmodel.AuthViewModel
+import com.example.uinavegacion.viewmodel.ProductViewModel
 import kotlinx.coroutines.launch
 
 @Composable
-fun AppNavGraph(navController: NavHostController, authVm: AuthViewModel = viewModel()) {
-
-    val isLoggedIn = authVm.session != null
+fun AppNavGraph(navController: NavHostController) {
+    val authVm: AuthViewModel = viewModel(factory = AppViewModelProvider.Factory)
+    val session by authVm.session.collectAsState()
+    val isLoggedIn = session != null
 
     if (isLoggedIn) {
         PrivateNavGraph(navController = navController, authVm = authVm)
@@ -39,75 +39,41 @@ private fun PublicNavGraph(navController: NavHostController, authVm: AuthViewMod
     Scaffold(
         topBar = {
             val currentRoute by navController.currentBackStackEntryAsState()
-            CenterAlignedTopAppBar(
-                title = { Text("Demo Navegación Compose") },
-                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primary
-                ),
-                navigationIcon = {
-                    if (currentRoute?.destination?.route != Route.Home.path) {
-                        IconButton(onClick = { navController.navigateUp() }) {
-                            Icon(
-                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                                contentDescription = "Volver"
-                            )
-                        }
-                    }
-                }
-            )
+            val title = when (currentRoute?.destination?.route) {
+                Route.Home.path -> "Bienvenido a Gestock"
+                Route.Login.path -> "Inicio de Sesión"
+                Route.Register.path -> "Registro de Usuario"
+                else -> "Gestock"
+            }
+            AppTopBar(title = title, navController = navController, onOpenDrawer = null)
         }
-    ) { innerPadding -> 
-        NavHost(
-            navController = navController, 
-            startDestination = Route.Home.path,
-            modifier = Modifier.padding(innerPadding)
-        ) {
-            composable(Route.Home.path) {
-                WelcomeScreen(
-                    onGoLogin = { navController.navigate(Route.Login.path) },
-                    onGoRegister = { navController.navigate(Route.Register.path) }
-                )
-            }
-
-            composable(Route.Login.path) {
-                LoginScreen(
-                    onLoginOk = { authVm.login("trabajador 1") },
-                    onGoRegister = { navController.navigate(Route.Register.path) }
-                )
-            }
-
-            composable(Route.Register.path) {
-                RegisterScreen(onGoLogin = { navController.navigate(Route.Login.path) })
-            }
+    ) { innerPadding ->
+        NavHost(navController, Route.Home.path, Modifier.padding(innerPadding)) {
+            composable(Route.Home.path) { WelcomeScreen({ navController.navigate(Route.Login.path) }, { navController.navigate(Route.Register.path) }) }
+            composable(Route.Login.path) { LoginScreen(authVm, {}, { navController.navigate(Route.Register.path) }) }
+            composable(Route.Register.path) { RegisterScreen(authVm, onGoLogin = { navController.navigate(Route.Login.path) }) }
         }
     }
 }
 
 @Composable
 private fun PrivateNavGraph(navController: NavHostController, authVm: AuthViewModel) {
+    val productVm: ProductViewModel = viewModel(factory = AppViewModelProvider.Factory)
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
 
-    // --- DEFINICIÓN DE RUTAS SEPARADAS ---
-    val stockSearchRoute = "stock_search_route"
-
-    // --- Acciones de Navegación del Grafo Privado ---
-    val goToInventoryControl: (String?) -> Unit = { message ->
-        val route = if (message != null) "${Route.InventoryControl.path}?message=$message" else Route.InventoryControl.path
-        navController.navigate(route) { popUpTo(0) }
-    }
+    val goToInventoryControl: (String?) -> Unit = { navController.navigate(Route.InventoryControl.path) { popUpTo(0) } }
     val onLogout: () -> Unit = { authVm.logout() }
-    val goRegister: () -> Unit = { navController.navigate(Route.Register.path) }
-    val goProductMenu: () -> Unit = { navController.navigate(Route.ProductMenu.path) }
-    val goProductEntry: () -> Unit = { navController.navigate(Route.ProductEntry.path) }
-    val goToReportsDashboard: () -> Unit = { navController.navigate(Route.ReportsDashboard.path) }
-    val goProductQuery: () -> Unit = { navController.navigate(Route.SearchProduct.path) } // 'Buscar producto' va a la pantalla de consulta
-    val goStockSearch: () -> Unit = { navController.navigate(stockSearchRoute) } // 'Stock' va a la pantalla de lista
-    val goToCreateProduct: () -> Unit = { navController.navigate(Route.CreateProduct.path) }
-    val goToStockDetail: (String) -> Unit = { productId -> navController.navigate("${Route.Stock.path}/$productId") }
-    val goToCreatePurchaseOrder: (String) -> Unit = { productId -> navController.navigate("${Route.CreatePurchaseOrder.path}/$productId") }
-    val goToProductSuccess: (String) -> Unit = { productName -> navController.navigate("${Route.ProductCreatedSuccess.path}/$productName") }
-    val goToPurchaseOrderSuccess: (String, String, Int) -> Unit = { productId, provider, quantity -> navController.navigate("${Route.PurchaseOrderSuccess.path}/$productId/$provider/$quantity") }
+    val goToCreateProduct = { navController.navigate(Route.CreateProduct.path) }
+    val goToMovements = { navController.navigate(Route.Movements.path) }
+    val goToInventoryList = { navController.navigate(Route.InventoryList.path) }
+    val goToSearchAndScan = { navController.navigate(Route.SearchScan.path) }
+    val goToReports = { navController.navigate(Route.Reports.path) }
+    val goToUsers = { navController.navigate(Route.Users.path) }
+    val goToQrScanner = { navController.navigate(Route.QrScanner.path) }
+    val goToProductDetailById: (Int) -> Unit = { id -> navController.navigate("${Route.ProductDetail.path}?productId=$id") }
+    val goToProductDetailByCode: (String) -> Unit = { code -> navController.navigate("${Route.ProductDetail.path}?productCode=$code") }
+    val goToProductSuccess: (String, String) -> Unit = { name, code -> navController.navigate("${Route.ProductCreatedSuccess.path}/$name/$code") }
 
     ModalNavigationDrawer(
         drawerState = drawerState,
@@ -116,96 +82,77 @@ private fun PrivateNavGraph(navController: NavHostController, authVm: AuthViewMo
                 currentRoute = navController.currentBackStackEntry?.destination?.route,
                 items = defaultDrawerItems(
                     isLoggedIn = true,
-                    onHome = { scope.launch { drawerState.close() }; goToInventoryControl(null) }, 
-                    onLogin = {}, 
-                    onRegister = { scope.launch { drawerState.close() }; goRegister() }, 
-                    onGoToProductMenu = { scope.launch { drawerState.close() }; goProductMenu() },
-                    onGoToProductEntry = { scope.launch { drawerState.close() }; goProductEntry() },
-                    onGoToReports = { scope.launch { drawerState.close() }; goToReportsDashboard() },
-                    onGoToSearch = { scope.launch { drawerState.close() }; goProductQuery() },
+                    onHome = { scope.launch { drawerState.close() }; goToInventoryControl(null) },
+                    onLogin = { /* No-op */ },
+                    onRegister = { scope.launch { drawerState.close() }; goToUsers() },
+                    onGoToCreateProduct = { scope.launch { drawerState.close() }; goToCreateProduct() },
+                    onGoToMovements = { scope.launch { drawerState.close() }; goToMovements() },
+                    onGoToInventoryList = { scope.launch { drawerState.close() }; goToInventoryList() },
+                    onGoToSearchAndScan = { scope.launch { drawerState.close() }; goToSearchAndScan() },
+                    onGoToReports = { scope.launch { drawerState.close() }; goToReports() },
                     onLogout = { scope.launch { drawerState.close() }; onLogout() }
                 )
             )
         }
     ) {
         Scaffold(
-            topBar = { AppTopBar(navController = navController, onOpenDrawer = { scope.launch { drawerState.open() } }) }
+            topBar = {
+                val currentRoute by navController.currentBackStackEntryAsState()
+                val title = when (currentRoute?.destination?.route?.substringBefore('?')) {
+                    Route.InventoryControl.path -> "Control de Inventario"
+                    Route.CreateProduct.path -> "Ingresar Producto"
+                    Route.Movements.path -> "Movimientos de Stock"
+                    Route.InventoryList.path -> "Inventario"
+                    Route.SearchScan.path -> "Buscar / Escanear"
+                    Route.Reports.path -> "Reportes"
+                    Route.Users.path -> "Usuarios y Roles"
+                    Route.QrScanner.path -> "Escaneando..."
+                    Route.ProductDetail.path -> "Detalle de Producto"
+                    Route.ProductCreatedSuccess.path.substringBefore('/') -> "Éxito"
+                    else -> "Gestock"
+                }
+                AppTopBar(title = title, navController = navController, onOpenDrawer = { scope.launch { drawerState.open() } })
+            }
         ) { innerPadding ->
-            NavHost(
-                navController = navController,
-                startDestination = Route.InventoryControl.path,
-                modifier = Modifier.padding(innerPadding)
-            ) {
+            NavHost(navController, Route.InventoryControl.path, Modifier.padding(innerPadding)) {
+                composable(Route.InventoryControl.path) { InventoryControlScreen(null, authVm, goToUsers, goToCreateProduct, goToMovements, goToInventoryList, goToReports, goToSearchAndScan) }
+                composable(Route.CreateProduct.path) { CreateProductScreen(authVm, productVm, goToProductSuccess) }
+                composable(Route.Movements.path) { ProductEntryScreen(authVm, productVm) }
+                composable(Route.InventoryList.path) { StockSearchScreen(productVm, onProductClick = goToProductDetailById) }
+                composable(Route.Reports.path) { ReportsDashboardScreen() }
+                composable(Route.Users.path) { RegisterScreen(authVm, onGoLogin = null) }
+                composable(Route.SearchScan.path) { ProductQueryScreen(productVm, goToProductDetailById, goToQrScanner) }
+                composable(Route.QrScanner.path) { QrScannerScreen { scannedCode -> navController.popBackStack(); goToProductDetailByCode(scannedCode) } }
+
                 composable(
-                    route = "${Route.InventoryControl.path}?message={message}",
-                    arguments = listOf(navArgument("message") { type = NavType.StringType; nullable = true })
-                ) {
-                     val message = it.arguments?.getString("message")
-                    InventoryControlScreen(
-                        message = message,
-                        onGoToRegister = goRegister,
-                        onGoToProductMenu = goProductMenu,
-                        onGoToProductEntry = goProductEntry,
-                        onGoToReports = goToReportsDashboard,
-                        onGoToSearch = goProductQuery, // <-- CONECTADO A LA PANTALLA DE CONSULTA
-                        onGoToStock = goStockSearch     // <-- CONECTADO A LA PANTALLA DE LISTA DE STOCK
+                    route = "${Route.ProductDetail.path}?productId={productId}&productCode={productCode}",
+                    arguments = listOf(
+                        navArgument("productId") { type = NavType.IntType; defaultValue = -1 },
+                        navArgument("productCode") { type = NavType.StringType; nullable = true }
+                    )
+                ) { backStackEntry ->
+                    ProductDetailScreen(
+                        productId = backStackEntry.arguments?.getInt("productId")?.takeIf { it != -1 },
+                        productCode = backStackEntry.arguments?.getString("productCode"),
+                        authVm = authVm,
+                        productVm = productVm,
+                        onBack = { navController.popBackStack() },
+                        onGoToInventoryControl = { goToInventoryControl(null) }
                     )
                 }
 
-                composable(Route.Register.path) { RegisterScreen(onGoLogin = { navController.navigate(Route.Login.path) }) }
-                composable(Route.ProductMenu.path) { ProductMenuScreen(onGoRegisterProduct = goToCreateProduct) }
-                composable(Route.CreateProduct.path) { CreateProductScreen(onCreateProduct = goToProductSuccess) }
-                
-                // --- PANTALLA DE CONSULTA PARA "BUSCAR PRODUCTO" ---
-                composable(Route.SearchProduct.path) { ProductQueryScreen() }
-
-                // --- PANTALLA DE LISTA PARA "STOCK" ---
-                composable(stockSearchRoute) { SearchProductScreen(onProductClick = goToStockDetail) }
-                
-                composable(Route.ProductEntry.path) { ProductEntryScreen() }
-                composable(Route.ReportsDashboard.path) { ReportsDashboardScreen() }
-                
                 composable(
-                    route = "${Route.ProductCreatedSuccess.path}/{productName}",
-                    arguments = listOf(navArgument("productName") { type = NavType.StringType })
+                    route = "${Route.ProductCreatedSuccess.path}/{productName}/{productCode}",
+                    arguments = listOf(
+                        navArgument("productName") { type = NavType.StringType },
+                        navArgument("productCode") { type = NavType.StringType }
+                    )
                 ) { backStackEntry ->
                     ProductCreatedSuccessScreen(
-                        productName = backStackEntry.arguments?.getString("productName") ?: "", 
+                        productName = backStackEntry.arguments?.getString("productName") ?: "",
+                        productCode = backStackEntry.arguments?.getString("productCode") ?: "",
                         onGoToInventoryControl = { goToInventoryControl(null) },
                         onAddAnotherProduct = { navController.popBackStack() }
-                    )
-                }
-                composable(
-                    route = "${Route.Stock.path}/{productId}",
-                    arguments = listOf(navArgument("productId") { type = NavType.StringType })
-                ) { backStackEntry ->
-                    val productId = backStackEntry.arguments?.getString("productId") ?: ""
-                    StockScreen(productId = productId, onGenerateOrder = { goToCreatePurchaseOrder(productId) })
-                }
-                composable(
-                    route = "${Route.CreatePurchaseOrder.path}/{productId}",
-                    arguments = listOf(navArgument("productId") { type = NavType.StringType })
-                ) { backStackEntry ->
-                    val productId = backStackEntry.arguments?.getString("productId") ?: ""
-                    CreatePurchaseOrderScreen(productId = productId, onOrderGenerated = goToPurchaseOrderSuccess)
-                }
-                composable(
-                    route = "${Route.PurchaseOrderSuccess.path}/{productId}/{provider}/{quantity}",
-                    arguments = listOf(
-                        navArgument("productId") { type = NavType.StringType },
-                        navArgument("provider") { type = NavType.StringType },
-                        navArgument("quantity") { type = NavType.IntType }
-                    )
-                ) { backStackEntry ->
-                    val productId = backStackEntry.arguments?.getString("productId") ?: ""
-                    val provider = backStackEntry.arguments?.getString("provider") ?: ""
-                    val quantity = backStackEntry.arguments?.getInt("quantity") ?: 0
-                    PurchaseOrderSuccessScreen(
-                        productId = productId,
-                        provider = provider,
-                        quantity = quantity,
-                        onBackToStock = { navController.popBackStack() },
-                        onGoToInventoryControl = { goToInventoryControl(null) }
                     )
                 }
             }

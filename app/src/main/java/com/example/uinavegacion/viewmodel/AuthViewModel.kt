@@ -1,36 +1,41 @@
 package com.example.uinavegacion.viewmodel
 
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import com.example.uinavegacion.repository.UserRepository
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
 
-// --- Modelo de Sesión ---
-enum class UserRole {
-    TRABAJADOR,
-    ADMINISTRADOR
-}
+enum class UserRole { ADMINISTRADOR, TRABAJADOR }
+
 data class UserSession(val username: String, val role: UserRole)
 
-// --- ViewModel de Autenticación ---
-class AuthViewModel : ViewModel() {
+class AuthViewModel(private val userRepository: UserRepository) : ViewModel() {
 
-    var session: UserSession? by mutableStateOf(null)
-        private set
+    private val _session = MutableStateFlow<UserSession?>(null)
+    val session = _session.asStateFlow()
 
-    /**
-     * Simula un inicio de sesión y establece la sesión del usuario.
-     */
-    fun login(username: String) {
-        // En una app real, aquí se validarían las credenciales y se guardaría en SharedPreferences.
-        val role = if (username.contains("admin", ignoreCase = true)) UserRole.ADMINISTRADOR else UserRole.TRABAJADOR
-        session = UserSession(username, role)
+    fun login(username: String, pass: String, onLoginResult: (Boolean) -> Unit) {
+        viewModelScope.launch {
+            val user = userRepository.loginUser(username, pass)
+            if (user != null) {
+                _session.value = UserSession(user.username, user.role)
+                onLoginResult(true)
+            } else {
+                onLoginResult(false)
+            }
+        }
     }
 
-    /**
-     * Cierra la sesión del usuario.
-     */
+    fun register(username: String, email: String, pass: String, role: UserRole, onRegisterResult: (Boolean) -> Unit) {
+        viewModelScope.launch {
+            val success = userRepository.registerUser(username, email, pass, role)
+            onRegisterResult(success)
+        }
+    }
+
     fun logout() {
-        session = null
+        _session.value = null
     }
 }

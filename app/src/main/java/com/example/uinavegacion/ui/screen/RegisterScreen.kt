@@ -9,131 +9,144 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.example.uinavegacion.viewmodel.AuthViewModel
+import com.example.uinavegacion.viewmodel.UserRole
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RegisterScreen(
-    onGoLogin: () -> Unit
+    authVm: AuthViewModel,
+    onGoLogin: (() -> Unit)? = null
 ) {
-    var name by remember { mutableStateOf("") }
+    var username by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
-    var passwordVisible by remember { mutableStateOf(false) }
-    var showSuccessMessage by remember { mutableStateOf(false) }
+    var showPassword by remember { mutableStateOf(false) }
+    var selectedRole by remember { mutableStateOf(UserRole.TRABAJADOR) }
+    var isRoleDropdownExpanded by remember { mutableStateOf(false) }
+    var registrationMessage by remember { mutableStateOf<String?>(null) }
 
-    val roles = listOf("Trabajador", "Administrador")
-    var selectedRole by remember { mutableStateOf(roles[0]) }
-    var isDropdownExpanded by remember { mutableStateOf(false) }
-
-    // --- Estados de validación ---
-    val isNameValid = name.isNotBlank() && name.all { it.isLetter() || it.isWhitespace() }
-    val isEmailValid = android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()
+    val isUsernameValid = username.all { it.isLetter() }
+    val isEmailValid = email.contains("@") && email.contains(".")
     val isPasswordValid = password.length == 6 && password.all { it.isDigit() }
-    val isFormValid = isNameValid && isEmailValid && isPasswordValid
+    val isFormValid = isUsernameValid && username.isNotBlank() && isEmailValid && email.isNotBlank() && isPasswordValid
 
     Column(
         modifier = Modifier
             .fillMaxSize()
             .padding(16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        if (!showSuccessMessage) {
-            Text("Ingresa tus datos para continuar", style = MaterialTheme.typography.titleMedium)
-            Spacer(Modifier.height(32.dp))
+        Text("Registro de Nuevo Usuario", style = MaterialTheme.typography.headlineSmall)
 
-            ExposedDropdownMenuBox(expanded = isDropdownExpanded, onExpandedChange = { isDropdownExpanded = !isDropdownExpanded }) {
-                OutlinedTextField(
-                    value = selectedRole, onValueChange = {},
-                    readOnly = true, label = { Text("Rol") },
-                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = isDropdownExpanded) },
-                    modifier = Modifier.fillMaxWidth().menuAnchor()
-                )
-                ExposedDropdownMenu(expanded = isDropdownExpanded, onDismissRequest = { isDropdownExpanded = false }) {
-                    roles.forEach { role ->
-                        DropdownMenuItem(text = { Text(role) }, onClick = { selectedRole = role; isDropdownExpanded = false })
-                    }
+        Spacer(Modifier.height(32.dp))
+
+        OutlinedTextField(
+            value = username,
+            onValueChange = { username = it; registrationMessage = null },
+            label = { Text("Nombre de Usuario") },
+            singleLine = true,
+            isError = !isUsernameValid && username.isNotEmpty(),
+            supportingText = { if (!isUsernameValid && username.isNotEmpty()) { Text("El nombre solo debe contener letras.") } },
+            modifier = Modifier.fillMaxWidth()
+        )
+
+        Spacer(Modifier.height(16.dp))
+
+        OutlinedTextField(
+            value = email,
+            onValueChange = { email = it; registrationMessage = null },
+            label = { Text("Email") },
+            singleLine = true,
+            isError = !isEmailValid && email.isNotEmpty(),
+            supportingText = { if (!isEmailValid && email.isNotEmpty()) { Text("Debe ser un email válido.") } },
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
+            modifier = Modifier.fillMaxWidth()
+        )
+
+        Spacer(Modifier.height(16.dp))
+
+        OutlinedTextField(
+            value = password,
+            onValueChange = { 
+                if (it.all { c -> c.isDigit() } && it.length <= 6) {
+                    password = it
+                    registrationMessage = null
+                }
+            },
+            label = { Text("Contraseña") },
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword),
+            visualTransformation = if (showPassword) VisualTransformation.None else PasswordVisualTransformation(),
+            trailingIcon = {
+                IconButton(onClick = { showPassword = !showPassword }) {
+                    Icon(
+                        imageVector = if (showPassword) Icons.Filled.VisibilityOff else Icons.Filled.Visibility,
+                        contentDescription = if (showPassword) "Ocultar contraseña" else "Mostrar contraseña"
+                    )
+                }
+            },
+            modifier = Modifier.fillMaxWidth()
+        )
+
+        Spacer(Modifier.height(16.dp))
+
+        ExposedDropdownMenuBox(
+            expanded = isRoleDropdownExpanded,
+            onExpandedChange = { isRoleDropdownExpanded = !isRoleDropdownExpanded }
+        ) {
+            OutlinedTextField(
+                value = selectedRole.name,
+                onValueChange = {},
+                readOnly = true,
+                label = { Text("Rol de Usuario") },
+                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = isRoleDropdownExpanded) },
+                modifier = Modifier.fillMaxWidth().menuAnchor()
+            )
+            ExposedDropdownMenu(
+                expanded = isRoleDropdownExpanded,
+                onDismissRequest = { isRoleDropdownExpanded = false }
+            ) {
+                UserRole.values().forEach { role ->
+                    DropdownMenuItem(
+                        text = { Text(role.name) },
+                        onClick = { 
+                            selectedRole = role 
+                            isRoleDropdownExpanded = false
+                        }
+                    )
                 }
             }
+        }
 
+        if (registrationMessage != null) {
             Spacer(Modifier.height(16.dp))
+            Text(registrationMessage!!, color = if (registrationMessage!!.contains("exitoso")) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error)
+        }
 
-            OutlinedTextField(
-                value = name,
-                onValueChange = { if (it.all { char -> char.isLetter() || char.isWhitespace() }) name = it },
-                label = { Text("Nombre") },
-                isError = !isNameValid && name.isNotEmpty(),
-                singleLine = true,
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text, imeAction = ImeAction.Next),
-                modifier = Modifier.fillMaxWidth()
-            )
-            if (!isNameValid && name.isNotEmpty()) {
-                Text("El nombre solo puede contener letras y espacios", color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
-            }
+        Spacer(Modifier.height(32.dp))
 
-            Spacer(Modifier.height(16.dp))
+        Button(
+            onClick = {
+                // --- CORRECCIÓN DEFINITIVA: Se pasa el callback a la función register ---
+                authVm.register(username, email, password, selectedRole) { success ->
+                    registrationMessage = if (success) "¡Registro exitoso!" else "El usuario ya existe."
+                }
+            },
+            enabled = isFormValid,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text("Registrar Usuario")
+        }
 
-            OutlinedTextField(
-                value = email,
-                onValueChange = { email = it },
-                label = { Text("Email") },
-                isError = !isEmailValid && email.isNotEmpty(),
-                singleLine = true,
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email, imeAction = ImeAction.Next),
-                modifier = Modifier.fillMaxWidth()
-            )
-            if (!isEmailValid && email.isNotEmpty()) {
-                Text("Introduce un email válido", color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
-            }
-
-            Spacer(Modifier.height(16.dp))
-
-            OutlinedTextField(
-                value = password,
-                onValueChange = { if (it.all { char -> char.isDigit() } && it.length <= 6) password = it },
-                label = { Text("Password (6 dígitos)") },
-                isError = !isPasswordValid && password.isNotEmpty(),
-                singleLine = true,
-                visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword, imeAction = ImeAction.Done),
-                trailingIcon = {
-                    val image = if (passwordVisible) Icons.Filled.Visibility else Icons.Filled.VisibilityOff
-                    IconButton(onClick = { passwordVisible = !passwordVisible }) {
-                        Icon(imageVector = image, contentDescription = if (passwordVisible) "Ocultar" else "Mostrar")
-                    }
-                },
-                modifier = Modifier.fillMaxWidth()
-            )
-            if (!isPasswordValid && password.isNotEmpty()) {
-                Text("La contraseña debe tener 6 dígitos numéricos", color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
-            }
-
-            Spacer(Modifier.height(32.dp))
-
-            Button(
-                onClick = { showSuccessMessage = true },
-                enabled = isFormValid, // El botón se activa solo si el formulario es válido
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text("Registrarse")
-            }
-        } else {
-            Text(
-                text = "usuario creado con éxito",
-                style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold),
-                color = Color(0xFF006400)
-            )
-            Spacer(Modifier.height(24.dp))
-            OutlinedButton(onClick = onGoLogin, modifier = Modifier.fillMaxWidth()) {
-                Text("Ir a Login")
+        if (onGoLogin != null) {
+            Spacer(Modifier.height(8.dp))
+            TextButton(onClick = onGoLogin) {
+                Text("¿Ya tienes cuenta? Inicia sesión")
             }
         }
     }

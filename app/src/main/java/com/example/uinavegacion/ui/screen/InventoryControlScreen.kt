@@ -17,7 +17,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import com.example.uinavegacion.navigation.Route
+import com.example.uinavegacion.viewmodel.AuthViewModel
+import com.example.uinavegacion.viewmodel.UserRole
 import kotlinx.coroutines.launch
 
 data class MenuItem(val text: String, val icon: ImageVector, val action: () -> Unit)
@@ -25,6 +26,7 @@ data class MenuItem(val text: String, val icon: ImageVector, val action: () -> U
 @Composable
 fun InventoryControlScreen(
     message: String?,
+    authVm: AuthViewModel,
     onGoToRegister: () -> Unit,
     onGoToProductMenu: () -> Unit,
     onGoToProductEntry: () -> Unit,
@@ -34,63 +36,43 @@ fun InventoryControlScreen(
 ) {
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
-
-    // --- ESTADO PARA CONTROLAR EL MENSAJE DE UNA SOLA VEZ ---
     var messageShown by rememberSaveable { mutableStateOf(false) }
 
     LaunchedEffect(message) {
         if (message != null && !messageShown) {
-            scope.launch {
-                snackbarHostState.showSnackbar(
-                    message = message,
-                    duration = SnackbarDuration.Short
-                )
-                messageShown = true // Marca el mensaje como mostrado
-            }
+            scope.launch { snackbarHostState.showSnackbar(message = message, duration = SnackbarDuration.Short) }
+            messageShown = true
         }
     }
 
     Scaffold(
-        snackbarHost = { 
-            SnackbarHost(snackbarHostState) { data ->
-                Snackbar(
-                    modifier = Modifier.padding(12.dp),
-                    containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                    contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
-                    action = {
-                        TextButton(onClick = { data.dismiss() }) {
-                            Text("OK")
-                        }
-                    }
-                ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Default.CheckCircle, contentDescription = "Éxito")
-                        Spacer(Modifier.width(8.dp))
-                        Text(data.visuals.message)
-                    }
-                }
-            }
-        }
+        snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { innerPadding ->
-        val bgColor = Color(0xFFE7F2FF)
+        val session by authVm.session.collectAsState()
+        val userRole = session?.role
 
         val menuItems = listOf(
-            MenuItem("Crear usuario", Icons.Default.PersonAdd, onGoToRegister),
-            MenuItem("Gestión de producto", Icons.Default.Category, onGoToProductMenu),
-            MenuItem("Inventario", Icons.Default.Warehouse, onGoToProductEntry),
-            MenuItem("Stock", Icons.Default.StackedLineChart, onGoToStock),
+            MenuItem("Ingresar producto", Icons.Default.AddBox, onGoToProductMenu),
+            MenuItem("Movimientos", Icons.Default.SyncAlt, onGoToProductEntry),
+            MenuItem("Inventario", Icons.Default.Inventory, onGoToStock),
+            MenuItem("Buscar / Escanear", Icons.Default.QrCodeScanner, onGoToSearch),
             MenuItem("Reporte de inventario", Icons.Default.Assessment, onGoToReports),
-            MenuItem("Buscar producto", Icons.Default.Search, onGoToSearch)
+            MenuItem("Usuarios y roles", Icons.Default.Group, onGoToRegister)
         )
+
+        val visibleMenuItems = if (userRole == UserRole.ADMINISTRADOR) {
+            menuItems
+        } else {
+            menuItems.filter { it.text != "Usuarios y roles" }
+        }
 
         LazyVerticalGrid(
             columns = GridCells.Fixed(2),
-            modifier = Modifier.fillMaxSize().background(bgColor).padding(innerPadding).padding(16.dp),
+            modifier = Modifier.fillMaxSize().background(Color(0xFFF0F4F8)).padding(innerPadding).padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
             horizontalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            items(menuItems) {
-                item ->
+            items(visibleMenuItems) { item ->
                 InventoryButton(item = item, onClick = item.action)
             }
         }
@@ -99,13 +81,11 @@ fun InventoryControlScreen(
 
 @Composable
 private fun InventoryButton(item: MenuItem, onClick: () -> Unit) {
-    val buttonColor = Color(0xFFE0D9FF)
-    val textColor = Color(0xFF333333)
-
     Button(
         onClick = onClick,
-        shape = RoundedCornerShape(12.dp),
-        colors = ButtonDefaults.buttonColors(containerColor = buttonColor),
+        shape = RoundedCornerShape(16.dp),
+        colors = ButtonDefaults.buttonColors(containerColor = Color.White),
+        elevation = ButtonDefaults.buttonElevation(defaultElevation = 4.dp),
         modifier = Modifier.height(130.dp).fillMaxWidth()
     ) {
         Column(
@@ -113,9 +93,9 @@ private fun InventoryButton(item: MenuItem, onClick: () -> Unit) {
             verticalArrangement = Arrangement.Center,
             modifier = Modifier.fillMaxSize()
         ) {
-            Icon(imageVector = item.icon, contentDescription = item.text, modifier = Modifier.size(48.dp), tint = textColor)
+            Icon(imageVector = item.icon, contentDescription = item.text, modifier = Modifier.size(48.dp), tint = MaterialTheme.colorScheme.primary)
             Spacer(Modifier.height(8.dp))
-            Text(text = item.text, textAlign = TextAlign.Center, color = textColor)
+            Text(text = item.text, textAlign = TextAlign.Center, color = MaterialTheme.colorScheme.onSurface)
         }
     }
 }
