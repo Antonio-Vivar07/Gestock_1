@@ -14,6 +14,7 @@ sealed class Route(val path: String) {
     data object SearchScan : Route("search_scan")
     data object Reports : Route("reports")
     data object Users : Route("users")
+    data object RemotePosts : Route("remote_posts")
 
     // --- Rutas de Flujo (Secundarias) ---
     data object QrScanner : Route("qr_scanner")
