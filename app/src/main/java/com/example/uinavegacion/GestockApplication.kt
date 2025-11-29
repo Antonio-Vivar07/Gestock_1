@@ -3,8 +3,8 @@ package com.example.uinavegacion
 import android.app.Application
 import com.example.uinavegacion.data.local.database.AppDatabase
 import com.example.uinavegacion.data.remote.RetrofitClient
-import com.example.uinavegacion.repository.ProductRepository
 import com.example.uinavegacion.repository.PostRepository
+import com.example.uinavegacion.repository.ProductRepository
 import com.example.uinavegacion.repository.UserRepository
 
 interface AppContainer {
@@ -28,14 +28,11 @@ class DefaultAppContainer(application: Application) : AppContainer {
             db.productDao(),
             db.movimientoDao(),
             RetrofitClient.inventoryApiService,
-            RetrofitClient.movementApiService      // 👈 AQUÍ INYECTAMOS EL SERVICE DE MOVIMIENTOS
+            RetrofitClient.movementApiService
         )
     }
 
-    override val postRepository: PostRepository by lazy {
-        PostRepository(RetrofitClient.postApiService)
-    }
-
+    // Corregido: Se eliminó la declaración duplicada que causaba el error
     override val postRepository: PostRepository by lazy {
         PostRepository(RetrofitClient.postApiService)
     }
