@@ -26,6 +26,7 @@ fun defaultDrawerItems(
     onGoToInventoryList: () -> Unit,
     onGoToSearchAndScan: () -> Unit,
     onGoToReports: () -> Unit,
+    onGoToRemotePosts: () -> Unit,
     onLogout: () -> Unit
 ): List<DrawerItem> {
     return if (isLoggedIn) {
@@ -36,6 +37,7 @@ fun defaultDrawerItems(
             DrawerItem(Icons.Default.Inventory, "Inventario", onGoToInventoryList),
             DrawerItem(Icons.Default.Search, "Buscar / Escanear", onGoToSearchAndScan),
             DrawerItem(Icons.Default.Assessment, "Reportes", onGoToReports),
+            DrawerItem(Icons.Default.Cloud, "API de prueba", onGoToRemotePosts),
             DrawerItem(Icons.Default.Group, "Usuarios", onRegister),
             DrawerItem(Icons.AutoMirrored.Filled.ExitToApp, "Cerrar Sesión", onLogout)
         )
