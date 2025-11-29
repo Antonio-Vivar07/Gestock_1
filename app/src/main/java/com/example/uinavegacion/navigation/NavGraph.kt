@@ -69,6 +69,7 @@ private fun PrivateNavGraph(navController: NavHostController, authVm: AuthViewMo
     val goToInventoryList = { navController.navigate(Route.InventoryList.path) }
     val goToSearchAndScan = { navController.navigate(Route.SearchScan.path) }
     val goToReports = { navController.navigate(Route.Reports.path) }
+    val goToRemotePosts = { navController.navigate(Route.RemotePosts.path) }
     val goToUsers = { navController.navigate(Route.Users.path) }
     val goToQrScanner = { navController.navigate(Route.QrScanner.path) }
     val goToProductDetailById: (Int) -> Unit = { id -> navController.navigate("${Route.ProductDetail.path}?productId=$id") }
@@ -90,6 +91,7 @@ private fun PrivateNavGraph(navController: NavHostController, authVm: AuthViewMo
                     onGoToInventoryList = { scope.launch { drawerState.close() }; goToInventoryList() },
                     onGoToSearchAndScan = { scope.launch { drawerState.close() }; goToSearchAndScan() },
                     onGoToReports = { scope.launch { drawerState.close() }; goToReports() },
+                    onGoToRemotePosts = { scope.launch { drawerState.close() }; goToRemotePosts() },
                     onLogout = { scope.launch { drawerState.close() }; onLogout() }
                 )
             )
@@ -120,6 +122,7 @@ private fun PrivateNavGraph(navController: NavHostController, authVm: AuthViewMo
                 composable(Route.Movements.path) { ProductEntryScreen(authVm, productVm) }
                 composable(Route.InventoryList.path) { StockSearchScreen(productVm, onProductClick = goToProductDetailById) }
                 composable(Route.Reports.path) { ReportsDashboardScreen() }
+                composable(Route.RemotePosts.path) { PostListScreen() }
                 composable(Route.Users.path) { RegisterScreen(authVm, onGoLogin = null) }
                 composable(Route.SearchScan.path) { ProductQueryScreen(productVm, goToProductDetailById, goToQrScanner) }
                 composable(Route.QrScanner.path) { QrScannerScreen { scannedCode -> navController.popBackStack(); goToProductDetailByCode(scannedCode) } }

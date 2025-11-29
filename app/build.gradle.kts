@@ -83,4 +83,13 @@ dependencies {
 
     // --- DEPENDENCIA DEL CEREBRO DEL ESCÁNER ---
     implementation("com.google.mlkit:barcode-scanning:17.2.0")
+
+// Retrofit + Gson para consumo de API REST
+implementation("com.squareup.retrofit2:retrofit:2.9.0")
+implementation("com.squareup.retrofit2:converter-gson:2.9.0")
+
+// Corrutinas de Kotlin (por si no están en el catálogo)
+implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.1")
+implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1")
+
 }
