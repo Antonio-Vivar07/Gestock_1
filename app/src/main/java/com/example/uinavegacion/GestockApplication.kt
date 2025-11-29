@@ -14,6 +14,7 @@ interface AppContainer {
 }
 
 class DefaultAppContainer(application: Application) : AppContainer {
+
     private val db by lazy {
         AppDatabase.getInstance(application)
     }
@@ -23,7 +24,16 @@ class DefaultAppContainer(application: Application) : AppContainer {
     }
 
     override val productRepository: ProductRepository by lazy {
-        ProductRepository(db.productDao(), db.movimientoDao())
+        ProductRepository(
+            db.productDao(),
+            db.movimientoDao(),
+            RetrofitClient.inventoryApiService,
+            RetrofitClient.movementApiService      // 👈 AQUÍ INYECTAMOS EL SERVICE DE MOVIMIENTOS
+        )
+    }
+
+    override val postRepository: PostRepository by lazy {
+        PostRepository(RetrofitClient.postApiService)
     }
 
     override val postRepository: PostRepository by lazy {
