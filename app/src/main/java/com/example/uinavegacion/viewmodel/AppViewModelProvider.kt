@@ -6,6 +6,7 @@ import androidx.lifecycle.viewmodel.initializer
 import com.example.uinavegacion.repository.PostRepository
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.example.uinavegacion.GestockApplication
+import com.example.uinavegacion.viewmodel.PostViewModel
 
 /**
  * El proveedor único para toda la aplicación. Proporciona una forma estándar de crear cualquier ViewModel.

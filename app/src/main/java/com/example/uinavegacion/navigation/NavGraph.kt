@@ -107,6 +107,7 @@ private fun PrivateNavGraph(navController: NavHostController, authVm: AuthViewMo
                     Route.InventoryList.path -> "Inventario"
                     Route.SearchScan.path -> "Buscar / Escanear"
                     Route.Reports.path -> "Reportes"
+                    Route.RemotePosts.path -> "API de prueba"
                     Route.Users.path -> "Usuarios y Roles"
                     Route.QrScanner.path -> "Escaneando..."
                     Route.ProductDetail.path -> "Detalle de Producto"
