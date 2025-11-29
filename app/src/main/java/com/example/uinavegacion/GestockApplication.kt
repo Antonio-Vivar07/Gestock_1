@@ -35,7 +35,12 @@ class DefaultAppContainer(application: Application) : AppContainer {
     override val postRepository: PostRepository by lazy {
         PostRepository(RetrofitClient.postApiService)
     }
+
+    override val postRepository: PostRepository by lazy {
+        PostRepository(RetrofitClient.postApiService)
+    }
 }
+
 
 class GestockApplication : Application() {
     lateinit var container: AppContainer

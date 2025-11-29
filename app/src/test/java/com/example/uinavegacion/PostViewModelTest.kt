@@ -7,28 +7,17 @@ import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.shouldBe
 import io.mockk.coEvery
 import io.mockk.mockk
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.test.*
-import org.junit.jupiter.api.AfterEach
-import org.junit.jupiter.api.BeforeEach
+import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
 
+/**
+ * Prueba unitaria de PostViewModel usando Kotest + MockK + coroutines-test.
+ */
 @OptIn(ExperimentalCoroutinesApi::class)
 class PostViewModelTest {
 
     private val repository: PostRepository = mockk()
-    private val testDispatcher = StandardTestDispatcher()
-
-    @BeforeEach
-    fun setup() {
-        Dispatchers.setMain(testDispatcher)
-    }
-
-    @AfterEach
-    fun tearDown() {
-        Dispatchers.resetMain()
-    }
 
     @Test
     fun `loadPosts actualiza el estado posts correctamente`() = runTest {
@@ -37,14 +26,13 @@ class PostViewModelTest {
             Post(userId = 1, id = 1, title = "Titulo A", body = "Contenido A"),
             Post(userId = 1, id = 2, title = "Titulo B", body = "Contenido B")
         )
-
         coEvery { repository.getPosts() } returns fakePosts
 
         val viewModel = PostViewModel(repository)
 
         // Act
+        // La llamada a loadPosts() ya se ejecutó en init, pero la forzamos de nuevo por claridad
         viewModel.loadPosts()
-        testDispatcher.scheduler.advanceUntilIdle() // ← importante
 
         // Assert
         val currentPosts = viewModel.posts.value

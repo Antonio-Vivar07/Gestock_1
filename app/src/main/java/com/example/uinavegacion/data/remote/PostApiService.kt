@@ -7,6 +7,6 @@ import retrofit2.http.GET
  */
 interface PostApiService {
 
-    @GET("api/products")
+    @GET("posts")
     suspend fun getPosts(): List<Post>
 }

@@ -18,7 +18,7 @@ import com.example.uinavegacion.viewmodel.AppViewModelProvider
 import com.example.uinavegacion.viewmodel.PostViewModel
 
 /**
- * Pantalla que muestra la lista de posts consumidos desde la API JSONPlaceholder.
+ * Pantalla simple que muestra la lista de posts obtenidos desde la API JSONPlaceholder.
  */
 @Composable
 fun PostListScreen(
@@ -62,7 +62,7 @@ fun PostListScreen(
                             )
                             Spacer(modifier = Modifier.height(4.dp))
                             Text(
-                                text = post.body ?: "",
+                                text = post.body,
                                 style = MaterialTheme.typography.bodyMedium
                             )
                         }
