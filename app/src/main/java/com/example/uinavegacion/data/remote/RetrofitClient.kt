@@ -4,7 +4,7 @@ import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 
 /**
- * Cliente Retrofit centralizado para la API JSONPlaceholder.
+ * Cliente Retrofit centralizado para consumir la API JSONPlaceholder.
  */
 object RetrofitClient {
 

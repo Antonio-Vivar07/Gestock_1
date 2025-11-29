@@ -4,7 +4,7 @@ import com.example.uinavegacion.data.remote.Post
 import com.example.uinavegacion.data.remote.PostApiService
 
 /**
- * Repositorio que encapsula el acceso a la API remota de posts.
+ * Repositorio responsable de obtener los posts desde la API remota.
  */
 class PostRepository(
     private val apiService: PostApiService
@@ -13,5 +13,7 @@ class PostRepository(
     /**
      * Obtiene la lista de posts desde la API REST.
      */
-    suspend fun getPosts(): List<Post> = apiService.getPosts()
+    suspend fun getPosts(): List<Post> {
+        return apiService.getPosts()
+    }
 }

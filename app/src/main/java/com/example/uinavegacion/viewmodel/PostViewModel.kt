@@ -9,7 +9,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
 /**
- * ViewModel encargado de consumir la API de posts y exponer el estado para la UI.
+ * ViewModel encargado de manejar el estado de la lista de posts obtenidos desde la API.
  */
 class PostViewModel(
     private val repository: PostRepository
@@ -28,6 +28,9 @@ class PostViewModel(
         loadPosts()
     }
 
+    /**
+     * Lanza una corrutina para cargar los posts desde la API.
+     */
     fun loadPosts() {
         _isLoading.value = true
         _errorMessage.value = null

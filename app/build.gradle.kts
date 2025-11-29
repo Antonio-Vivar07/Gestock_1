@@ -84,27 +84,12 @@ dependencies {
     // --- DEPENDENCIA DEL CEREBRO DEL ESCÁNER ---
     implementation("com.google.mlkit:barcode-scanning:17.2.0")
 
-
-// Retrofit + Gson para consumo de API REST (Guía 3.1.2)
+// Retrofit + Gson para consumo de API REST
 implementation("com.squareup.retrofit2:retrofit:2.9.0")
 implementation("com.squareup.retrofit2:converter-gson:2.9.0")
 
-// Corrutinas de Kotlin para operaciones asíncronas
+// Corrutinas de Kotlin (por si no están en el catálogo)
 implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.1")
 implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1")
 
-// --- Dependencias de testing (Guía 3.2.2) ---
-testImplementation("io.kotest:kotest-runner-junit5:5.8.0")
-testImplementation("io.kotest:kotest-assertions-core:5.8.0")
-testImplementation("io.mockk:mockk:1.13.10")
-testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.8.1")
-
-androidTestImplementation("androidx.compose.ui:ui-test-junit4")
-debugImplementation("androidx.compose.ui:ui-test-manifest")
-
-}
-
-
-tasks.withType<Test> {
-    useJUnitPlatform()
 }

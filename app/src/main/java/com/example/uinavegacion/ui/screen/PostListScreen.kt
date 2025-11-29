@@ -18,7 +18,7 @@ import com.example.uinavegacion.viewmodel.AppViewModelProvider
 import com.example.uinavegacion.viewmodel.PostViewModel
 
 /**
- * Pantalla que muestra la lista de posts consumidos desde la API JSONPlaceholder.
+ * Pantalla simple que muestra la lista de posts obtenidos desde la API JSONPlaceholder.
  */
 @Composable
 fun PostListScreen(

@@ -37,6 +37,7 @@ initializer {
     }
 }
 
+
 /**
  * Función de extensión para obtener la instancia de la aplicación desde dentro de un ViewModel.
  */
