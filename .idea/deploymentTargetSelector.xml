@@ -17,6 +17,9 @@
       <SelectionState runConfigName="PostListScreenTest">
         <option name="selectionMode" value="DROPDOWN" />
       </SelectionState>
+      <SelectionState runConfigName="postsList_se_muestra_al_cargar_desde_api()">
+        <option name="selectionMode" value="DROPDOWN" />
+      </SelectionState>
     </selectionStates>
   </component>
 </project>

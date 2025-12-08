@@ -14,7 +14,7 @@ import com.example.uinavegacion.data.local.user.UserEntity
 
 @Database(
     entities = [UserEntity::class, ProductEntity::class, MovimientoEntity::class],
-    version = 6, // <-- ORDEN DE DEMOLICIÓN DEFINITIVA
+    version = 8, // La versión ha sido incrementada para reflejar los últimos cambios en el schema
     exportSchema = false
 )
 @TypeConverters(Converters::class)
@@ -35,6 +35,7 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     "gestock-database"
                 )
+                // Esta línea borrará y recreará la base de datos si la versión cambia
                 .fallbackToDestructiveMigration()
                 .allowMainThreadQueries()
                 .build()

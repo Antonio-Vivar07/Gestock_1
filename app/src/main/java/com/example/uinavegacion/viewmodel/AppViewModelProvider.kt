@@ -28,12 +28,19 @@ object AppViewModelProvider {
         }
 
 
-// Inicializador para PostViewModel (consumo de API REST)
-initializer {
-    PostViewModel(
-        gestockApplication().container.postRepository
-    )
-}
+        // Inicializador para PostViewModel (consumo de API REST)
+        initializer {
+            PostViewModel(
+                gestockApplication().container.postRepository
+            )
+        }
+
+        // Inicializador para ReportsViewModel
+        initializer {
+            ReportsViewModel(
+                gestockApplication().container.productRepository
+            )
+        }
     }
 }
 

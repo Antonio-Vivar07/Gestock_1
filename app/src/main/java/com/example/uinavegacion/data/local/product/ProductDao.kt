@@ -13,13 +13,13 @@ interface ProductDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertProduct(product: ProductEntity)
 
-    @Query("SELECT * FROM products ORDER BY name ASC")
+    // --- QUERY MODIFICADA PARA FILTRAR POR ESTADO ---
+    @Query("SELECT * FROM products WHERE status = 'ACTIVE' ORDER BY name ASC")
     fun getAllProducts(): Flow<List<ProductEntity>>
 
     @Query("SELECT * FROM products WHERE id = :id")
     suspend fun getProductById(id: Int): ProductEntity?
 
-    // --- FUNCIÓN AÑADIDA PARA BÚSQUEDA POR CÓDIGO ---
     @Query("SELECT * FROM products WHERE code = :code LIMIT 1")
     suspend fun findByCode(code: String): ProductEntity?
 

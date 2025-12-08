@@ -6,5 +6,6 @@ data class RemoteProduct(
     val codigoQr: String,
     val stockActual: Int,
     val categoria: String,
-    val ubicacion: String
+    val ubicacion: String,
+    val minStock: Int
 )

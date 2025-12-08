@@ -9,6 +9,7 @@ data class ProductEntity(
     @PrimaryKey(autoGenerate = true)
     val id: Int = 0,
 
+    // --- Campos existentes ---
     @ColumnInfo(name = "name")
     val name: String,
 
@@ -22,11 +23,21 @@ data class ProductEntity(
     val category: String,
 
     @ColumnInfo(name = "zone")
-    val zone: String, // <-- CAMPO AÑADIDO
+    val zone: String,
 
     @ColumnInfo(name = "min_stock")
     val minStock: Int = 0,
 
     @ColumnInfo(name = "stock")
-    val stock: Int = 0
+    val stock: Int = 0,
+
+    @ColumnInfo(name = "last_update")
+    val lastUpdate: Long = 0L,
+
+    @ColumnInfo(name = "status")
+    val status: String = "ACTIVE",
+
+    // --- CAMPO AÑADIDO PARA GUARDAR EL ID DEL SERVIDOR ---
+    @ColumnInfo(name = "remote_id")
+    val remoteId: String? = null
 )
