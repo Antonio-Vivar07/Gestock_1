@@ -3,10 +3,10 @@ package com.example.uinavegacion.data.remote
 import com.google.gson.annotations.SerializedName
 
 /**
- * Modelo de datos para representar el estado de un producto en el reporte.
- * Este objeto es el que se recibe desde el backend.
+ * Representa la estructura de datos para cada item del reporte que viene del backend.
  */
 data class ProductReport(
+    // --- CORRECCIÓN: Se alinea con el campo "name" del DTO del backend ---
     @SerializedName("name")
     val name: String,
 
@@ -17,5 +17,12 @@ data class ProductReport(
     val minStock: Int,
 
     @SerializedName("lastUpdate")
-    val lastUpdate: String
+    val lastUpdate: String,
+
+    // Se mantienen los campos nulables para robustez
+    @SerializedName("categoria")
+    val categoria: String?,
+
+    @SerializedName("ubicacion")
+    val ubicacion: String?
 )

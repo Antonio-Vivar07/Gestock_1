@@ -56,7 +56,7 @@ fun StockSearchScreen(
         categoryMatch && searchMatch
     }
 
-    // --- DIÁLOGO DE BORRADO (CON TEXTO AJUSTADO) ---
+    // --- DIÁLOGO DE BORRADO (CON TEXTO AJUSTADO) --
     if (showDeleteDialog && productToDelete != null) {
         AlertDialog(
             onDismissRequest = { showDeleteDialog = false },
@@ -136,13 +136,14 @@ fun StockSearchScreen(
                 Divider()
             }
 
-            // --- SECCIÓN 2: PRODUCTOS ARCHIVADOS (NUEVA SECCIÓN AÑADIDA) ---
+            // --- SECCIÓN 2: PRODUCTOS BORRADOS (TÍTULO CAMBIADO) ---
             item(key = "archived-header") {
                 Spacer(Modifier.height(24.dp))
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
-                    Text("Productos Archivados", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                    // --- ¡AQUÍ ESTÁ EL ÚNICO CAMBIO! ---
+                    Text("Productos Borrados", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                     IconButton(onClick = { productVm.loadInactiveProducts() }) {
-                        Icon(Icons.Default.Refresh, contentDescription = "Refrescar lista de archivados")
+                        Icon(Icons.Default.Refresh, contentDescription = "Refrescar lista de borrados")
                     }
                 }
                 Divider(Modifier.padding(top = 8.dp))
@@ -163,7 +164,7 @@ fun StockSearchScreen(
                 }
                 uiState.inactiveProducts.isEmpty() -> {
                     item(key = "archived-empty") {
-                        Text("No hay productos archivados.", style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(16.dp))
+                        Text("No hay productos borrados.", style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(16.dp))
                     }
                 }
                 else -> {

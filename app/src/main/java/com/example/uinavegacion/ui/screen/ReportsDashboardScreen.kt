@@ -4,9 +4,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -25,18 +23,10 @@ fun getStockLevel(current: Int, min: Int): StockLevel {
     if (min <= 0) {
         return if (current > 0) StockLevel.ALTO else StockLevel.BAJO
     }
-
-    // Lógica final con tu regla del 50%
     val umbralMedio = min * 0.5
-
     return when {
-        // Si es mayor que el mínimo, es ALTO.
         current > min -> StockLevel.ALTO
-        
-        // Si es mayor O IGUAL al 50%, es MEDIO.
         current >= umbralMedio -> StockLevel.MEDIO
-
-        // Si es menor que el 50%, es BAJO.
         else -> StockLevel.BAJO
     }
 }
@@ -97,8 +87,20 @@ private fun ProductStatusCard(report: ProductReport) {
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
+            // --- INFORMACIÓN PRINCIPAL ---
             Text(report.name, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+            
+            // --- ¡AQUÍ ESTÁ LA CORRECCIÓN FINAL! ---
+            // Se manejan los valores nulos para que muestre "N/A" si no hay dato.
+            Text(
+                "Categoría: ${report.categoria ?: "N/A"}  |  Ubicación: ${report.ubicacion ?: "N/A"}",
+                style = MaterialTheme.typography.bodySmall,
+                color = Color.Gray
+            )
+
             Divider(modifier = Modifier.padding(vertical = 8.dp))
+            
+            // --- DETALLES DE STOCK ---
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 Text("Stock Actual: ${report.currentStock}")
                 Text("Nivel: ${level.name}", color = levelColor, fontWeight = FontWeight.Bold)
