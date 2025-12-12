@@ -15,6 +15,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.example.uinavegacion.viewmodel.AuthViewModel
@@ -51,29 +52,43 @@ fun InventoryControlScreen(
         val session by authVm.session.collectAsState()
         val userRole = session?.role
 
-        val menuItems = listOf(
-            MenuItem("Ingresar producto", Icons.Default.AddBox, onGoToProductMenu),
-            MenuItem("Movimientos", Icons.Default.SyncAlt, onGoToProductEntry),
-            MenuItem("Inventario", Icons.Default.Inventory, onGoToStock),
-            MenuItem("Buscar / Escanear", Icons.Default.QrCodeScanner, onGoToSearch),
-            MenuItem("Reporte de inventario", Icons.Default.Assessment, onGoToReports),
-            MenuItem("Usuarios y roles", Icons.Default.Group, onGoToRegister)
-        )
+        Column(modifier = Modifier.fillMaxSize()) {
+            LazyVerticalGrid(
+                columns = GridCells.Fixed(2),
+                modifier = Modifier
+                    .weight(1f) // El grid de botones ocupa todo el espacio disponible
+                    .background(Color(0xFFF0F4F8))
+                    .padding(innerPadding)
+                    .padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+                horizontalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                val menuItems = listOf(
+                    MenuItem("Ingresar producto", Icons.Default.AddBox, onGoToProductMenu),
+                    MenuItem("Movimientos", Icons.Default.SyncAlt, onGoToProductEntry),
+                    MenuItem("Inventario", Icons.Default.Inventory, onGoToStock),
+                    MenuItem("Buscar / Escanear", Icons.Default.QrCodeScanner, onGoToSearch),
+                    MenuItem("Reporte de inventario", Icons.Default.Assessment, onGoToReports),
+                    MenuItem("Usuarios y roles", Icons.Default.Group, onGoToRegister)
+                )
 
-        val visibleMenuItems = if (userRole == UserRole.ADMINISTRADOR) {
-            menuItems
-        } else {
-            menuItems.filter { it.text != "Usuarios y roles" }
-        }
+                val visibleMenuItems = if (userRole == UserRole.ADMINISTRADOR) {
+                    menuItems
+                } else {
+                    menuItems.filter { it.text != "Usuarios y roles" }
+                }
 
-        LazyVerticalGrid(
-            columns = GridCells.Fixed(2),
-            modifier = Modifier.fillMaxSize().background(Color(0xFFF0F4F8)).padding(innerPadding).padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
-            horizontalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            items(visibleMenuItems) { item ->
-                InventoryButton(item = item, onClick = item.action)
+                items(visibleMenuItems) { item ->
+                    InventoryButton(item = item, onClick = item.action)
+                }
+            }
+
+            // --- ¡AQUÍ ESTÁ LA NUEVA SECCIÓN! ---
+            session?.let {
+                UserInfoBar(
+                    role = it.role.name.replaceFirstChar { char -> char.titlecase() },
+                    username = it.username
+                )
             }
         }
     }
@@ -86,7 +101,9 @@ private fun InventoryButton(item: MenuItem, onClick: () -> Unit) {
         shape = RoundedCornerShape(16.dp),
         colors = ButtonDefaults.buttonColors(containerColor = Color.White),
         elevation = ButtonDefaults.buttonElevation(defaultElevation = 4.dp),
-        modifier = Modifier.height(130.dp).fillMaxWidth()
+        modifier = Modifier
+            .height(130.dp)
+            .fillMaxWidth()
     ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
@@ -96,6 +113,37 @@ private fun InventoryButton(item: MenuItem, onClick: () -> Unit) {
             Icon(imageVector = item.icon, contentDescription = item.text, modifier = Modifier.size(48.dp), tint = MaterialTheme.colorScheme.primary)
             Spacer(Modifier.height(8.dp))
             Text(text = item.text, textAlign = TextAlign.Center, color = MaterialTheme.colorScheme.onSurface)
+        }
+    }
+}
+
+// --- ¡NUEVO COMPOSABLE PARA LA BARRA DE USUARIO! ---
+@Composable
+private fun UserInfoBar(role: String, username: String) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center
+        ) {
+            Icon(Icons.Default.Person, contentDescription = "Usuario", tint = MaterialTheme.colorScheme.primary)
+            Spacer(Modifier.width(8.dp))
+            Text(
+                text = "$role: ",
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.Bold
+            )
+            Text(
+                text = username,
+                style = MaterialTheme.typography.bodyMedium
+            )
         }
     }
 }

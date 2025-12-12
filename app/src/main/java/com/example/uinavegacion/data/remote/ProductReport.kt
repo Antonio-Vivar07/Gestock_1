@@ -4,9 +4,9 @@ import com.google.gson.annotations.SerializedName
 
 /**
  * Representa la estructura de datos para cada item del reporte que viene del backend.
+ * Incluye campos de diagnóstico.
  */
 data class ProductReport(
-    // --- CORRECCIÓN: Se alinea con el campo "name" del DTO del backend ---
     @SerializedName("name")
     val name: String,
 
@@ -19,10 +19,19 @@ data class ProductReport(
     @SerializedName("lastUpdate")
     val lastUpdate: String,
 
-    // Se mantienen los campos nulables para robustez
     @SerializedName("categoria")
     val categoria: String?,
 
     @SerializedName("ubicacion")
-    val ubicacion: String?
+    val ubicacion: String?,
+
+    @SerializedName("lastModifiedBy")
+    val lastModifiedBy: String?,
+
+    // --- NUEVOS CAMPOS DE DIAGNÓSTICO ---
+    @SerializedName("status")
+    val status: String?,
+
+    @SerializedName("codigoQr")
+    val codigoQr: String?
 )

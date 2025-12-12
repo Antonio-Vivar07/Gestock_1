@@ -20,7 +20,8 @@ class DefaultAppContainer(application: Application) : AppContainer {
     }
 
     override val userRepository: UserRepository by lazy {
-        UserRepository(db.userDao())
+        // --- ¡CORRECCIÓN! Se añade el userApiService que faltaba ---
+        UserRepository(db.userDao(), RetrofitClient.userApiService)
     }
 
     override val productRepository: ProductRepository by lazy {
@@ -32,7 +33,6 @@ class DefaultAppContainer(application: Application) : AppContainer {
         )
     }
 
-    // Corregido: Se eliminó la declaración duplicada que causaba el error
     override val postRepository: PostRepository by lazy {
         PostRepository(RetrofitClient.postApiService)
     }
