@@ -4,7 +4,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.uinavegacion.data.local.user.UserEntity
 import com.example.uinavegacion.repository.UserRepository
-import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -19,9 +18,9 @@ data class UserSession(val username: String, val role: UserRole)
 class AuthViewModel(private val userRepository: UserRepository) : ViewModel() {
 
     private val _session = MutableStateFlow<UserSession?>(null)
-    val session = _session.asStateFlow()
+    val session: StateFlow<UserSession?> = _session.asStateFlow()
 
-    // --- ¡CORRECCIÓN! Se añade el flujo de usuarios aquí ---
+    // Lista reactiva de usuarios (para tu pantalla de Gestión)
     val users: StateFlow<List<UserEntity>> = userRepository.getAllUsers()
         .stateIn(
             scope = viewModelScope,
@@ -34,7 +33,10 @@ class AuthViewModel(private val userRepository: UserRepository) : ViewModel() {
             val user = userRepository.loginUser(username, pass)
             if (user != null) {
                 _session.value = UserSession(user.username, user.role)
-                val roleName = user.role.name.lowercase().replaceFirstChar { it.titlecase() }
+
+                val roleName = user.role.name.lowercase()
+                    .replaceFirstChar { it.titlecase() }
+
                 SessionManager.userInfo = "${user.username} ($roleName)"
                 onLoginResult(true)
             } else {
@@ -43,7 +45,13 @@ class AuthViewModel(private val userRepository: UserRepository) : ViewModel() {
         }
     }
 
-    fun register(username: String, email: String, pass: String, role: UserRole, onRegisterResult: (Boolean) -> Unit) {
+    fun register(
+        username: String,
+        email: String,
+        pass: String,
+        role: UserRole,
+        onRegisterResult: (Boolean) -> Unit
+    ) {
         viewModelScope.launch {
             val success = userRepository.registerUser(username, email, pass, role)
             onRegisterResult(success)
@@ -55,8 +63,23 @@ class AuthViewModel(private val userRepository: UserRepository) : ViewModel() {
         SessionManager.userInfo = null
     }
 
-    // --- Se mantiene la función de sincronización ---
+    // Sincroniza usuarios desde backend -> DB local
     suspend fun syncUsers() {
         userRepository.syncUsersWithBackend()
+    }
+
+    // Cambia rol (backend) y luego refresca lista
+    fun updateUserRole(
+        userToUpdate: UserEntity,
+        newRole: UserRole,
+        onResult: (Boolean) -> Unit
+    ) {
+        viewModelScope.launch {
+            val success = userRepository.updateUserRole(userToUpdate, newRole)
+            if (success) {
+                syncUsers()
+            }
+            onResult(success)
+        }
     }
 }

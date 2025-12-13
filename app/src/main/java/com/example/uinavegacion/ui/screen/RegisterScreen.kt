@@ -9,8 +9,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.uinavegacion.viewmodel.AppViewModelProvider
 import com.example.uinavegacion.viewmodel.AuthViewModel
 import com.example.uinavegacion.viewmodel.UserRole
 import kotlinx.coroutines.launch
@@ -24,8 +22,6 @@ fun RegisterScreen(
     var username by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
-    var selectedRole by remember { mutableStateOf(UserRole.TRABAJADOR) }
-    var isRoleMenuExpanded by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
 
@@ -68,33 +64,10 @@ fun RegisterScreen(
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
                 modifier = Modifier.fillMaxWidth()
             )
-            Spacer(Modifier.height(16.dp))
-
-            ExposedDropdownMenuBox(expanded = isRoleMenuExpanded, onExpandedChange = { isRoleMenuExpanded = it }) {
-                OutlinedTextField(
-                    value = selectedRole.name,
-                    onValueChange = {},
-                    readOnly = true,
-                    label = { Text("Rol de Usuario") },
-                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = isRoleMenuExpanded) },
-                    modifier = Modifier.fillMaxWidth().menuAnchor()
-                )
-                ExposedDropdownMenu(expanded = isRoleMenuExpanded, onDismissRequest = { isRoleMenuExpanded = false }) {
-                    UserRole.values().forEach { role ->
-                        DropdownMenuItem(
-                            text = { Text(role.name) },
-                            onClick = {
-                                selectedRole = role
-                                isRoleMenuExpanded = false
-                            }
-                        )
-                    }
-                }
-            }
             Spacer(Modifier.height(32.dp))
 
             Button(onClick = {
-                authVm.register(username, email, password, selectedRole) { success ->
+                authVm.register(username, email, password, UserRole.TRABAJADOR) { success ->
                     scope.launch {
                         if (success) {
                             snackbarHostState.showSnackbar("Usuario registrado con éxito")
@@ -107,7 +80,9 @@ fun RegisterScreen(
             }, modifier = Modifier.fillMaxWidth()) {
                 Text("Crear Cuenta")
             }
+
             Spacer(Modifier.height(16.dp))
+
             TextButton(onClick = onLogin) {
                 Text("¿Ya tienes cuenta? Inicia Sesión")
             }
