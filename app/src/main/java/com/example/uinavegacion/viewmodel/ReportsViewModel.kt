@@ -2,43 +2,37 @@ package com.example.uinavegacion.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.uinavegacion.data.remote.ProductReport
+import com.example.uinavegacion.data.remote.RemoteProductReport
 import com.example.uinavegacion.repository.ProductRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
-class ReportsViewModel(private val productRepository: ProductRepository) : ViewModel() {
+class ReportsViewModel(
+    private val repo: ProductRepository
+) : ViewModel() {
 
-    // Flujo para la lista de productos del reporte
-    private val _productReports = MutableStateFlow<List<ProductReport>>(emptyList())
-    val productReports: StateFlow<List<ProductReport>> = _productReports
+    private val _report = MutableStateFlow<List<RemoteProductReport>>(emptyList())
+    val report: StateFlow<List<RemoteProductReport>> = _report.asStateFlow()
 
-    // Flujo para el estado de carga
-    private val _isLoading = MutableStateFlow(false)
-    val isLoading: StateFlow<Boolean> = _isLoading
+    private val _loading = MutableStateFlow(false)
+    val loading: StateFlow<Boolean> = _loading.asStateFlow()
 
-    // Flujo para mensajes de error
-    private val _errorMessage = MutableStateFlow<String?>(null)
-    val errorMessage: StateFlow<String?> = _errorMessage
+    private val _error = MutableStateFlow<String?>(null)
+    val error: StateFlow<String?> = _error.asStateFlow()
 
-    init {
-        loadReports()
-    }
-
-    /**
-     * Carga los datos del reporte desde el repositorio.
-     */
-    fun loadReports() {
+    fun loadReport() {
         viewModelScope.launch {
-            _isLoading.value = true
-            _errorMessage.value = null
+            _loading.value = true
+            _error.value = null
             try {
-                _productReports.value = productRepository.getProductsReport()
+                // ✅ FIX REAL: tu repo tiene getReport(), NO getProductsReport()
+                _report.value = repo.getReport()
             } catch (e: Exception) {
-                _errorMessage.value = "Error al cargar el reporte: ${e.message}"
+                _error.value = e.message ?: "Error desconocido"
             } finally {
-                _isLoading.value = false
+                _loading.value = false
             }
         }
     }

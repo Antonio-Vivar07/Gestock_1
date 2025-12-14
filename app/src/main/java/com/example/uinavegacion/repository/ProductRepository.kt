@@ -66,7 +66,8 @@ class ProductRepository(
             codigoQr = product.code,
             stockActual = product.stock,
             categoria = product.category,
-            ubicacion = product.zone
+            ubicacion = product.zone,
+            minStock = product.minStock // ✅ FIX: ahora se envía minStock
         )
 
         try {
@@ -117,7 +118,6 @@ class ProductRepository(
             e.printStackTrace()
         }
     }
-
 
     private fun RemoteProductFull.toEntity(): ProductEntity {
         return ProductEntity(

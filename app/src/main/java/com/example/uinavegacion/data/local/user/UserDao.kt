@@ -4,6 +4,7 @@ import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface UserDao {
@@ -21,6 +22,12 @@ interface UserDao {
      */
     @Query("SELECT * FROM users WHERE username = :username LIMIT 1")
     suspend fun findByUsername(username: String): UserEntity?
+
+    /**
+     * ✅ LISTA TODOS LOS USUARIOS (para pantallas / viewmodel)
+     */
+    @Query("SELECT * FROM users ORDER BY username ASC")
+    fun getAllUsers(): Flow<List<UserEntity>>
 
     @Query("DELETE FROM users WHERE username = :username")
     suspend fun deleteByUsername(username: String)

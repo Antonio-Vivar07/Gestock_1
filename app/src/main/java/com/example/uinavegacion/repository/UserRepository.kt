@@ -10,18 +10,21 @@ import com.example.uinavegacion.data.remote.RetrofitClient
 import com.example.uinavegacion.data.local.session.SessionManager
 import com.example.uinavegacion.viewmodel.UserRole
 import retrofit2.HttpException
+import kotlinx.coroutines.flow.Flow
 
 /**
  * Repositorio que maneja las operaciones de datos para los usuarios.
  * Es la única fuente de verdad para los datos de usuario.
  */
-
 class UserRepository(
     private val userDao: UserDao,
     private val sessionManager: SessionManager,
     // Servicio remoto para hablar con el backend
     private val userApi: UserApiService = RetrofitClient.userApiService
 ) {
+
+    /** ✅ NUEVO: usuarios locales desde Room */
+    fun getAllUsers(): Flow<List<UserEntity>> = userDao.getAllUsers()
 
     /**
      * Lista usuarios desde el backend (requiere ADMIN).
@@ -79,10 +82,8 @@ class UserRepository(
 
         try {
             userApi.registerUser(remoteUser)
-        } catch (e: Exception) {
-            // Si falla la llamada al backend, NO rompemos la app.
-            // Puedes agregar logs si quieres.
-            // Log.e("UserRepository", "Error registrando usuario remoto", e)
+        } catch (_: Exception) {
+            // no rompemos app si falla backend
         }
 
         return true
@@ -90,16 +91,8 @@ class UserRepository(
 
     /**
      * Valida las credenciales de un usuario.
-     *
-     * Primero intenta validar contra la BD local (Room).
-     * Si no encuentra nada o las credenciales no coinciden,
-     * intenta hacer login en el backend.
-     *
-     * Devuelve la entidad del usuario si es válido, o null si no lo es.
      */
     suspend fun loginUser(username: String, pass: String): UserEntity? {
-        // Primero intentamos con el backend para evitar conflictos:
-        // - si borraste el usuario en MongoDB, aquí se detecta y limpiamos Room.
         return try {
             val loginRequest = RemoteUserLogin(
                 username = username,
@@ -108,44 +101,36 @@ class UserRepository(
 
             val response = userApi.loginUser(loginRequest)
 
-            // Guardar sesión (JWT + user + rol) para que Retrofit agregue headers
+            // Guardar sesión (JWT + user + rol)
             try {
                 sessionManager.saveSession(response.jwt, response.username, response.role)
             } catch (_: Exception) { }
 
-
-            // Mapear la respuesta remota a una entidad local
             val userRole = try {
                 UserRole.valueOf(response.role)
-            } catch (e: IllegalArgumentException) {
-                UserRole.TRABAJADOR // Valor por defecto por si llega algo raro
+            } catch (_: IllegalArgumentException) {
+                UserRole.TRABAJADOR
             }
 
             val newLocalUser = UserEntity(
                 username = response.username,
                 email = response.email,
-                pass = pass,     // guardamos la misma pass usada en el login
+                pass = pass,
                 role = userRole
             )
 
-            // Guardamos / actualizamos en Room para futuros logins offline
             userDao.insertUser(newLocalUser)
-
             newLocalUser
         } catch (e: HttpException) {
-            // Si el backend rechaza credenciales o el usuario ya no existe,
-            // limpiamos el usuario local para que no quede "fantasma".
             if (e.code() == 401 || e.code() == 404) {
                 try { userDao.deleteByUsername(username) } catch (_: Exception) {}
             }
             null
-        } catch (e: Exception) {
-            // Si el backend está caído, último recurso: permitir login local.
+        } catch (_: Exception) {
             val localUser = userDao.findByUsername(username)
             if (localUser != null && localUser.pass == pass) localUser else null
         }
     }
-
 
     suspend fun clearSession() {
         sessionManager.clear()
