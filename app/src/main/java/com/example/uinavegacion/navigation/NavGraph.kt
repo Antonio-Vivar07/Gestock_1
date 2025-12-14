@@ -63,6 +63,9 @@ private fun PrivateNavGraph(navController: NavHostController, authVm: AuthViewMo
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
 
+    // Necesario para filtrar UI/permiso por rol dentro del grafo privado
+    val session by authVm.session.collectAsState()
+
     val goToInventoryControl: (String?) -> Unit = { navController.navigate(Route.InventoryControl.path) { popUpTo(0) } }
     val onLogout: () -> Unit = { authVm.logout() }
     val goToCreateProduct = { navController.navigate(Route.CreateProduct.path) }
@@ -83,6 +86,7 @@ private fun PrivateNavGraph(navController: NavHostController, authVm: AuthViewMo
                 currentRoute = navController.currentBackStackEntry?.destination?.route,
                 items = defaultDrawerItems(
                     isLoggedIn = true,
+                    role = session?.role,
                     onHome = { scope.launch { drawerState.close() }; goToInventoryControl(null) },
                     onLogin = { /* No-op */ },
                     onRegister = { scope.launch { drawerState.close() }; goToUsers() }, // El item de menú ahora va a Users
@@ -119,10 +123,23 @@ private fun PrivateNavGraph(navController: NavHostController, authVm: AuthViewMo
                 composable(Route.InventoryControl.path) { InventoryControlScreen(null, authVm, goToUsers, goToCreateProduct, goToMovements, goToInventoryList, goToReports, goToSearchAndScan) }
                 composable(Route.CreateProduct.path) { CreateProductScreen(authVm, productVm, goToProductSuccess) }
                 composable(Route.Movements.path) { ProductEntryScreen(authVm, productVm) }
+<<<<<<< Updated upstream
                 composable(Route.InventoryList.path) { StockSearchScreen(productVm, onProductClick = goToProductDetailById) }
                 composable(Route.Reports.path) { ReportsDashboardScreen() }
                 // La ruta Users ahora lleva a la pantalla que lista y sincroniza
                 composable(Route.Users.path) { UserListScreen(authVm = authVm) }
+=======
+                composable(Route.InventoryList.path) { StockSearchScreen(authVm = authVm, productVm = productVm, onProductClick = goToProductDetailById) }
+                composable(Route.Reports.path) { ReportsDashboardScreen(productVm) }
+                composable(Route.RemotePosts.path) { PostListScreen() }
+                composable(Route.Users.path) {
+                    if (session?.role == com.example.uinavegacion.viewmodel.UserRole.ADMINISTRADOR) {
+                        RegisterScreen(authVm, onGoLogin = null)
+                    } else {
+                        com.example.uinavegacion.ui.screen.ForbiddenScreen(message = "No tienes permisos para ver Usuarios y Roles")
+                    }
+                }
+>>>>>>> Stashed changes
                 composable(Route.SearchScan.path) { ProductQueryScreen(productVm, goToProductDetailById, goToQrScanner) }
                 composable(Route.QrScanner.path) { QrScannerScreen { scannedCode -> navController.popBackStack(); goToProductDetailByCode(scannedCode) } }
 

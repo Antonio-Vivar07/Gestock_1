@@ -9,7 +9,13 @@ data class ProductEntity(
     @PrimaryKey(autoGenerate = true)
     val id: Int = 0,
 
+<<<<<<< Updated upstream
     // --- Campos existentes ---
+=======
+    @ColumnInfo(name = "remote_id")
+    val remoteId: String? = null,
+
+>>>>>>> Stashed changes
     @ColumnInfo(name = "name")
     val name: String,
 

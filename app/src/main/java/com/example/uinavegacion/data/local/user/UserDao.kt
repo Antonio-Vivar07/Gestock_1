@@ -18,7 +18,15 @@ interface UserDao {
     @Query("SELECT * FROM users WHERE username = :username LIMIT 1")
     suspend fun findByUsername(username: String): UserEntity?
 
+<<<<<<< Updated upstream
     // --- ¡MÉTODO AÑADIDO QUE FALTABA! ---
     @Delete
     suspend fun delete(user: UserEntity)
+=======
+    @Query("DELETE FROM users WHERE username = :username")
+    suspend fun deleteByUsername(username: String)
+
+    @Query("DELETE FROM users")
+    suspend fun clearAll()
+>>>>>>> Stashed changes
 }

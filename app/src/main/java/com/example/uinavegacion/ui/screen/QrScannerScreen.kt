@@ -45,6 +45,14 @@ fun QrScannerScreen(onQrScanned: (String) -> Unit) {
         }
     }
 
+    // Creamos scanner 1 vez (no por frame) para evitar cuelgues/rendimiento pobre
+    val options = remember {
+        BarcodeScannerOptions.Builder()
+            .setBarcodeFormats(Barcode.FORMAT_QR_CODE)
+            .build()
+    }
+    val scanner = remember { BarcodeScanning.getClient(options) }
+
     Box(modifier = Modifier.fillMaxSize()) {
         if (hasCameraPermission) {
             AndroidView(
@@ -63,27 +71,24 @@ fun QrScannerScreen(onQrScanned: (String) -> Unit) {
                             .build()
                             .also {
                                 it.setAnalyzer(Executors.newSingleThreadExecutor()) { imageProxy ->
-                                    val image = imageProxy.image
-                                    if (image != null) {
-                                        val inputImage = InputImage.fromMediaImage(image, imageProxy.imageInfo.rotationDegrees)
-                                        
-                                        val options = BarcodeScannerOptions.Builder()
-                                            .setBarcodeFormats(Barcode.FORMAT_QR_CODE)
-                                            .build()
-                                        val scanner = BarcodeScanning.getClient(options)
-
-                                        scanner.process(inputImage)
-                                            .addOnSuccessListener { barcodes ->
-                                                barcodes.firstOrNull()?.rawValue?.let {
-                                                    onQrScanned(it)
+                                    try {
+                                        val image = imageProxy.image
+                                        if (image != null) {
+                                            val inputImage = InputImage.fromMediaImage(image, imageProxy.imageInfo.rotationDegrees)
+                                            scanner.process(inputImage)
+                                                .addOnSuccessListener { barcodes ->
+                                                    barcodes.firstOrNull()?.rawValue?.let { onQrScanned(it) }
                                                 }
-                                            }
-                                            .addOnFailureListener { e ->
-                                                Log.e("QrScannerScreen", "Error al escanear", e)
-                                            }
-                                            .addOnCompleteListener { 
-                                                imageProxy.close() 
-                                            }
+                                                .addOnFailureListener { e ->
+                                                    Log.e("QrScannerScreen", "Error al escanear", e)
+                                                }
+                                                .addOnCompleteListener { imageProxy.close() }
+                                        } else {
+                                            imageProxy.close()
+                                        }
+                                    } catch (e: Exception) {
+                                        Log.e("QrScannerScreen", "Error en analyzer", e)
+                                        imageProxy.close()
                                     }
                                 }
                             }

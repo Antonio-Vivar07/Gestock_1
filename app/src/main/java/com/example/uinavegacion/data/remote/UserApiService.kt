@@ -13,7 +13,13 @@ interface UserApiService {
 
     // --- CORREGIDO: La respuesta del login ahora incluye el token JWT ---
     @POST("api/users/login")
+<<<<<<< Updated upstream
     suspend fun loginUser(@Body request: LoginRequest): Response<RemoteUserResponse>
+=======
+    suspend fun loginUser(
+        @Body loginData: RemoteUserLogin
+    ): RemoteLoginResponse
+>>>>>>> Stashed changes
 
     @GET("api/users")
     suspend fun getAllUsers(): List<RemoteUser>

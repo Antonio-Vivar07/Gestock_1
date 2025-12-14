@@ -13,8 +13,15 @@ interface ProductDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertProduct(product: ProductEntity)
 
+<<<<<<< Updated upstream
     // --- QUERY MODIFICADA PARA FILTRAR POR ESTADO ---
     @Query("SELECT * FROM products WHERE status = 'ACTIVE' ORDER BY name ASC")
+=======
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertProductAndGetId(product: ProductEntity): Long
+
+    @Query("SELECT * FROM products ORDER BY name ASC")
+>>>>>>> Stashed changes
     fun getAllProducts(): Flow<List<ProductEntity>>
 
     @Query("SELECT * FROM products WHERE id = :id")
@@ -25,6 +32,15 @@ interface ProductDao {
 
     @Query("UPDATE products SET stock = :newStock WHERE id = :productId")
     suspend fun updateStock(productId: Int, newStock: Int)
+
+    @Query("UPDATE products SET remote_id = :remoteId WHERE id = :productId")
+    suspend fun updateRemoteId(productId: Int, remoteId: String)
+
+    @Query("DELETE FROM products")
+    suspend fun clearAll()
+
+    @Query("DELETE FROM products WHERE remote_id = :remoteId")
+    suspend fun deleteByRemoteId(remoteId: String)
 
     @Delete
     suspend fun deleteProduct(product: ProductEntity)
