@@ -59,8 +59,15 @@ class AuthViewModel(private val userRepository: UserRepository) : ViewModel() {
     }
 
     fun logout() {
+<<<<<<< Updated upstream
         _session.value = null
         SessionManager.userInfo = null
+=======
+        viewModelScope.launch {
+            userRepository.clearSession()
+            _session.value = null
+        }
+>>>>>>> Stashed changes
     }
 
     // Sincroniza usuarios desde backend -> DB local

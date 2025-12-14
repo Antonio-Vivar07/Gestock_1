@@ -7,12 +7,31 @@ import com.example.uinavegacion.data.remote.LoginRequest
 import com.example.uinavegacion.data.remote.RegisterRequest
 import com.example.uinavegacion.data.remote.UpdateRoleRequest
 import com.example.uinavegacion.data.remote.UserApiService
+<<<<<<< Updated upstream
 import com.example.uinavegacion.viewmodel.SessionManager
 import com.example.uinavegacion.viewmodel.UserRole
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 
 class UserRepository(private val userDao: UserDao, private val userApiService: UserApiService) {
+=======
+import com.example.uinavegacion.data.remote.RetrofitClient
+import com.example.uinavegacion.data.local.session.SessionManager
+import com.example.uinavegacion.viewmodel.UserRole
+import retrofit2.HttpException
+
+/**
+ * Repositorio que maneja las operaciones de datos para los usuarios.
+ * Es la única fuente de verdad para los datos de usuario.
+ */
+
+class UserRepository(
+    private val userDao: UserDao,
+    private val sessionManager: SessionManager,
+    // Servicio remoto para hablar con el backend
+    private val userApi: UserApiService = RetrofitClient.userApiService
+) {
+>>>>>>> Stashed changes
 
     fun getAllUsers(): Flow<List<UserEntity>> = userDao.getAllUsers()
 
@@ -37,6 +56,11 @@ class UserRepository(private val userDao: UserDao, private val userApiService: U
     }
 
     suspend fun loginUser(username: String, pass: String): UserEntity? {
+<<<<<<< Updated upstream
+=======
+        // Primero intentamos con el backend para evitar conflictos:
+        // - si borraste el usuario en MongoDB, aquí se detecta y limpiamos Room.
+>>>>>>> Stashed changes
         return try {
             val request = LoginRequest(username, pass)
             val response = userApiService.loginUser(request)
@@ -45,6 +69,7 @@ class UserRepository(private val userDao: UserDao, private val userApiService: U
                     // --- ¡CORRECCIÓN! Se guarda el token JWT en la sesión ---
                     SessionManager.jwtToken = remoteUser.jwt
 
+<<<<<<< Updated upstream
                     val userRole = UserRole.valueOf(remoteUser.role.uppercase())
                     var localUser = userDao.findByUsername(remoteUser.username)
                     if (localUser == null) {
@@ -60,10 +85,49 @@ class UserRepository(private val userDao: UserDao, private val userApiService: U
             }
         } catch (e: Exception) {
             Log.e("UserRepository", "Error en el login: ", e)
+=======
+            val response = userApi.loginUser(loginRequest)
+
+            // Guardar sesión (JWT + user + rol) para que Retrofit agregue headers
+            try {
+                sessionManager.saveSession(response.jwt, response.username, response.role)
+            } catch (_: Exception) { }
+
+
+            // Mapear la respuesta remota a una entidad local
+            val userRole = try {
+                UserRole.valueOf(response.role)
+            } catch (e: IllegalArgumentException) {
+                UserRole.TRABAJADOR // Valor por defecto por si llega algo raro
+            }
+
+            val newLocalUser = UserEntity(
+                username = response.username,
+                email = response.email,
+                pass = pass,     // guardamos la misma pass usada en el login
+                role = userRole
+            )
+
+            // Guardamos / actualizamos en Room para futuros logins offline
+            userDao.insertUser(newLocalUser)
+
+            newLocalUser
+        } catch (e: HttpException) {
+            // Si el backend rechaza credenciales o el usuario ya no existe,
+            // limpiamos el usuario local para que no quede "fantasma".
+            if (e.code() == 401 || e.code() == 404) {
+                try { userDao.deleteByUsername(username) } catch (_: Exception) {}
+            }
+>>>>>>> Stashed changes
             null
+        } catch (e: Exception) {
+            // Si el backend está caído, último recurso: permitir login local.
+            val localUser = userDao.findByUsername(username)
+            if (localUser != null && localUser.pass == pass) localUser else null
         }
     }
 
+<<<<<<< Updated upstream
     suspend fun syncUsersWithBackend() {
         try {
             Log.d("UserRepository", "Iniciando sincronización de usuarios...")
@@ -105,5 +169,10 @@ class UserRepository(private val userDao: UserDao, private val userApiService: U
         } catch (e: Exception) {
             false
         }
+=======
+
+    suspend fun clearSession() {
+        sessionManager.clear()
+>>>>>>> Stashed changes
     }
 }

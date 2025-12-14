@@ -16,6 +16,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+<<<<<<< Updated upstream
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.example.uinavegacion.viewmodel.AuthViewModel
@@ -70,6 +71,11 @@ data class DrawerItem(
     val route: String,
     val action: () -> Unit
 )
+=======
+import com.example.uinavegacion.viewmodel.UserRole
+
+data class DrawerItem(val icon: ImageVector, val text: String, val onClick: () -> Unit)
+>>>>>>> Stashed changes
 
 @Composable
 fun AppDrawer(
@@ -77,6 +83,7 @@ fun AppDrawer(
     items: List<DrawerItem>
 ) {
     ModalDrawerSheet {
+<<<<<<< Updated upstream
         Spacer(Modifier.height(12.dp))
         items.forEach { item ->
             NavigationDrawerItem(
@@ -115,6 +122,66 @@ fun defaultDrawerItems(
     } else {
         itemList.add(DrawerItem(Icons.Default.Home, "Inicio", "home", onHome))
         itemList.add(DrawerItem(Icons.AutoMirrored.Filled.Login, "Iniciar Sesión", "login", onLogin))
+=======
+        Column(modifier = Modifier.padding(16.dp)) {
+            items.forEach { item ->
+                NavigationDrawerItem(
+                    icon = { Icon(item.icon, contentDescription = null) },
+                    label = { Text(item.text) },
+                    selected = currentRoute == item.text,
+                    onClick = item.onClick,
+                    modifier = Modifier.padding(vertical = 4.dp)
+                )
+            }
+        }
+>>>>>>> Stashed changes
     }
     return itemList
+}
+
+/**
+ * Items del Drawer según sesión y rol.
+ * - TRABAJADOR: no ve "Usuarios y Roles".
+ * - ADMINISTRADOR: ve todo.
+ */
+@Composable
+fun defaultDrawerItems(
+    isLoggedIn: Boolean,
+    role: UserRole?,
+    onHome: () -> Unit,
+    onLogin: () -> Unit,
+    onRegister: () -> Unit,
+    onGoToCreateProduct: () -> Unit,
+    onGoToMovements: () -> Unit,
+    onGoToInventoryList: () -> Unit,
+    onGoToSearchAndScan: () -> Unit,
+    onGoToReports: () -> Unit,
+    onGoToRemotePosts: () -> Unit,
+    onLogout: () -> Unit
+): List<DrawerItem> {
+
+    if (!isLoggedIn) {
+        return listOf(
+            DrawerItem(Icons.Default.Home, "Inicio", onHome),
+            DrawerItem(Icons.AutoMirrored.Filled.Login, "Iniciar Sesión", onLogin),
+            DrawerItem(Icons.Default.PersonAdd, "Registrar Usuario", onRegister)
+        )
+    }
+
+    val items = mutableListOf(
+        DrawerItem(Icons.Default.Home, "Inicio", onHome),
+        DrawerItem(Icons.Default.AddBox, "Ingresar Producto", onGoToCreateProduct),
+        DrawerItem(Icons.Default.SyncAlt, "Movimientos", onGoToMovements),
+        DrawerItem(Icons.Default.Inventory, "Inventario", onGoToInventoryList),
+        DrawerItem(Icons.Default.Search, "Buscar / Escanear", onGoToSearchAndScan),
+        DrawerItem(Icons.Default.Assessment, "Reportes", onGoToReports),
+        DrawerItem(Icons.Default.Cloud, "API de prueba", onGoToRemotePosts),
+    )
+
+    if (role == UserRole.ADMINISTRADOR) {
+        items.add(DrawerItem(Icons.Default.Group, "Usuarios y Roles", onRegister))
+    }
+
+    items.add(DrawerItem(Icons.AutoMirrored.Filled.ExitToApp, "Cerrar Sesión", onLogout))
+    return items
 }
