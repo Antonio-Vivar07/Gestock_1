@@ -76,14 +76,18 @@ dependencies {
     implementation(libs.androidx.room.ktx)
     ksp(libs.androidx.room.compiler)
 
-    implementation(libs.androidx.camera.core)
-    implementation(libs.androidx.camera.camera2)
-    implementation(libs.androidx.camera.lifecycle)
+    // CameraX (core + camera2 + lifecycle + view)
+    implementation("androidx.camera:camera-core:1.3.3")
+    implementation("androidx.camera:camera-camera2:1.3.3")
+    implementation("androidx.camera:camera-lifecycle:1.3.3")
     implementation(libs.androidx.camera.view)
 
     // --- DEPENDENCIA DEL CEREBRO DEL ESCÁNER ---
     implementation("com.google.mlkit:barcode-scanning:17.2.0")
 
+
+// DataStore (persistencia de sesión)
+implementation("androidx.datastore:datastore-preferences:1.1.1")
 // Retrofit + Gson para consumo de API REST
 implementation("com.squareup.retrofit2:retrofit:2.9.0")
 implementation("com.squareup.retrofit2:converter-gson:2.9.0")

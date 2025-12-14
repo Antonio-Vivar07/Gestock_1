@@ -18,7 +18,6 @@ import com.example.uinavegacion.ui.screen.*
 import com.example.uinavegacion.viewmodel.AppViewModelProvider
 import com.example.uinavegacion.viewmodel.AuthViewModel
 import com.example.uinavegacion.viewmodel.ProductViewModel
-import com.example.uinavegacion.viewmodel.UserViewModel
 import kotlinx.coroutines.launch
 
 @Composable
@@ -46,13 +45,28 @@ private fun PublicNavGraph(navController: NavHostController, authVm: AuthViewMod
                 Route.Register.path -> "Registro de Usuario"
                 else -> "Gestock"
             }
-            AppTopBar(title = title, navController = navController, onOpenDrawer = null, authVm = authVm)
+            AppTopBar(title = title, navController = navController, onOpenDrawer = null)
         }
     ) { innerPadding ->
         NavHost(navController, Route.Home.path, Modifier.padding(innerPadding)) {
-            composable(Route.Home.path) { WelcomeScreen({ navController.navigate(Route.Login.path) }, { navController.navigate(Route.Register.path) }) }
-            composable(Route.Login.path) { LoginScreen(authVm, { navController.navigate(Route.InventoryControl.path) }, { navController.navigate(Route.Register.path) }) }
-            composable(Route.Register.path) { RegisterScreen(authVm = authVm, onLogin = { navController.navigate(Route.Login.path) }) }
+            composable(Route.Home.path) {
+                WelcomeScreen(
+                    { navController.navigate(Route.Login.path) },
+                    { navController.navigate(Route.Register.path) }
+                )
+            }
+            composable(Route.Login.path) {
+                LoginScreen(authVm, {}, { navController.navigate(Route.Register.path) })
+            }
+
+            // ✅ ÚNICO CAMBIO: ahora RegisterScreen requiere onBack
+            composable(Route.Register.path) {
+                RegisterScreen(
+                    authVm = authVm,
+                    onBack = { navController.popBackStack() },
+                    onGoLogin = { navController.navigate(Route.Login.path) }
+                )
+            }
         }
     }
 }
@@ -63,6 +77,9 @@ private fun PrivateNavGraph(navController: NavHostController, authVm: AuthViewMo
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
 
+    // Necesario para filtrar UI/permiso por rol dentro del grafo privado
+    val session by authVm.session.collectAsState()
+
     val goToInventoryControl: (String?) -> Unit = { navController.navigate(Route.InventoryControl.path) { popUpTo(0) } }
     val onLogout: () -> Unit = { authVm.logout() }
     val goToCreateProduct = { navController.navigate(Route.CreateProduct.path) }
@@ -70,7 +87,8 @@ private fun PrivateNavGraph(navController: NavHostController, authVm: AuthViewMo
     val goToInventoryList = { navController.navigate(Route.InventoryList.path) }
     val goToSearchAndScan = { navController.navigate(Route.SearchScan.path) }
     val goToReports = { navController.navigate(Route.Reports.path) }
-    val goToUsers = { navController.navigate(Route.Users.path) } // Esta ruta ahora mostrará la lista
+    val goToRemotePosts = { navController.navigate(Route.RemotePosts.path) }
+    val goToUsers = { navController.navigate(Route.Users.path) }
     val goToQrScanner = { navController.navigate(Route.QrScanner.path) }
     val goToProductDetailById: (Int) -> Unit = { id -> navController.navigate("${Route.ProductDetail.path}?productId=$id") }
     val goToProductDetailByCode: (String) -> Unit = { code -> navController.navigate("${Route.ProductDetail.path}?productCode=$code") }
@@ -83,14 +101,16 @@ private fun PrivateNavGraph(navController: NavHostController, authVm: AuthViewMo
                 currentRoute = navController.currentBackStackEntry?.destination?.route,
                 items = defaultDrawerItems(
                     isLoggedIn = true,
+                    role = session?.role,
                     onHome = { scope.launch { drawerState.close() }; goToInventoryControl(null) },
                     onLogin = { /* No-op */ },
-                    onRegister = { scope.launch { drawerState.close() }; goToUsers() }, // El item de menú ahora va a Users
+                    onRegister = { scope.launch { drawerState.close() }; goToUsers() },
                     onGoToCreateProduct = { scope.launch { drawerState.close() }; goToCreateProduct() },
                     onGoToMovements = { scope.launch { drawerState.close() }; goToMovements() },
                     onGoToInventoryList = { scope.launch { drawerState.close() }; goToInventoryList() },
                     onGoToSearchAndScan = { scope.launch { drawerState.close() }; goToSearchAndScan() },
                     onGoToReports = { scope.launch { drawerState.close() }; goToReports() },
+                    onGoToRemotePosts = { scope.launch { drawerState.close() }; goToRemotePosts() },
                     onLogout = { scope.launch { drawerState.close() }; onLogout() }
                 )
             )
@@ -106,25 +126,42 @@ private fun PrivateNavGraph(navController: NavHostController, authVm: AuthViewMo
                     Route.InventoryList.path -> "Inventario"
                     Route.SearchScan.path -> "Buscar / Escanear"
                     Route.Reports.path -> "Reportes"
-                    Route.Users.path -> "Gestión de Usuarios" // Título para la nueva pantalla de lista
+                    Route.RemotePosts.path -> "API de prueba"
+                    Route.Users.path -> "Usuarios y Roles"
                     Route.QrScanner.path -> "Escaneando..."
                     Route.ProductDetail.path -> "Detalle de Producto"
                     Route.ProductCreatedSuccess.path.substringBefore('/') -> "Éxito"
                     else -> "Gestock"
                 }
-                AppTopBar(title = title, navController = navController, onOpenDrawer = { scope.launch { drawerState.open() } }, authVm = authVm)
+                AppTopBar(title = title, navController = navController, onOpenDrawer = { scope.launch { drawerState.open() } })
             }
         ) { innerPadding ->
             NavHost(navController, Route.InventoryControl.path, Modifier.padding(innerPadding)) {
-                composable(Route.InventoryControl.path) { InventoryControlScreen(null, authVm, goToUsers, goToCreateProduct, goToMovements, goToInventoryList, goToReports, goToSearchAndScan) }
+                composable(Route.InventoryControl.path) {
+                    InventoryControlScreen(
+                        null, authVm, goToUsers, goToCreateProduct, goToMovements,
+                        goToInventoryList, goToReports, goToSearchAndScan
+                    )
+                }
                 composable(Route.CreateProduct.path) { CreateProductScreen(authVm, productVm, goToProductSuccess) }
                 composable(Route.Movements.path) { ProductEntryScreen(authVm, productVm) }
-                composable(Route.InventoryList.path) { StockSearchScreen(productVm, onProductClick = goToProductDetailById) }
-                composable(Route.Reports.path) { ReportsDashboardScreen() }
-                // La ruta Users ahora lleva a la pantalla que lista y sincroniza
-                composable(Route.Users.path) { UserListScreen(authVm = authVm) }
+                composable(Route.InventoryList.path) { StockSearchScreen(authVm = authVm, productVm = productVm, onProductClick = goToProductDetailById) }
+                composable(Route.Reports.path) { ReportsDashboardScreen(productVm) }
+                composable(Route.RemotePosts.path) { PostListScreen() }
+                composable(Route.Users.path) {
+                    if (session?.role == com.example.uinavegacion.viewmodel.UserRole.ADMINISTRADOR) {
+                        com.example.uinavegacion.ui.screen.UserManagementScreen(authVm)
+                    } else {
+                        com.example.uinavegacion.ui.screen.ForbiddenScreen(message = "No tienes permisos para ver Usuarios y Roles")
+                    }
+                }
                 composable(Route.SearchScan.path) { ProductQueryScreen(productVm, goToProductDetailById, goToQrScanner) }
-                composable(Route.QrScanner.path) { QrScannerScreen { scannedCode -> navController.popBackStack(); goToProductDetailByCode(scannedCode) } }
+                composable(Route.QrScanner.path) {
+                    QrScannerScreen { scannedCode ->
+                        navController.popBackStack()
+                        goToProductDetailByCode(scannedCode)
+                    }
+                }
 
                 composable(
                     route = "${Route.ProductDetail.path}?productId={productId}&productCode={productCode}",

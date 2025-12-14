@@ -6,80 +6,114 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material.icons.filled.RestoreFromTrash
+import androidx.compose.material.icons.filled.Restore
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.Sync
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.uinavegacion.data.local.product.ProductEntity
-import com.example.uinavegacion.viewmodel.AppViewModelProvider
+import com.example.uinavegacion.viewmodel.AuthViewModel
 import com.example.uinavegacion.viewmodel.ProductViewModel
-import kotlinx.coroutines.launch
+import com.example.uinavegacion.viewmodel.UserRole
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun StockSearchScreen(
-    productVm: ProductViewModel = viewModel(factory = AppViewModelProvider.Factory),
+    authVm: AuthViewModel,
+    productVm: ProductViewModel,
     onProductClick: (Int) -> Unit
 ) {
-    val activeProducts by productVm.products.collectAsState()
-    val uiState by productVm.uiState.collectAsState()
-    val scope = rememberCoroutineScope()
-    val snackbarHostState = remember { SnackbarHostState() }
+    val session by authVm.session.collectAsState()
+    val role = session?.role
+    val isAdmin = role == UserRole.ADMINISTRADOR
 
-    var searchQuery by remember { mutableStateOf("") }
-    var showDeleteDialog by remember { mutableStateOf(false) }
-    var productToDelete by remember { mutableStateOf<ProductEntity?>(null) }
+    // Siempre refrescamos desde backend para evitar datos "fantasma" (si borraste algo en MongoDB)
+    LaunchedEffect(Unit) { productVm.refreshProducts() }
 
-    LaunchedEffect(activeProducts.size) {
-        productVm.loadInactiveProducts()
+    val allProducts by productVm.allProducts.collectAsState()
+    val deletedProducts by productVm.deletedProducts.collectAsState()
+
+    var activeTab by remember { mutableStateOf(0) } // 0 = Activos, 1 = Eliminados
+    LaunchedEffect(activeTab, isAdmin) {
+        if (isAdmin && activeTab == 1) {
+            productVm.loadDeletedProducts()
+        }
     }
 
+    var searchQuery by remember { mutableStateOf("") }
+    var showConfirmDialog by remember { mutableStateOf(false) }
+    var dialogAction by remember { mutableStateOf<(() -> Unit)?>(null) }
+    var dialogText by remember { mutableStateOf("") }
+
+    var snackbarMessage by remember { mutableStateOf<String?>(null) }
+
     val defaultCategoryLabel = "Categoría"
-    val availableCategories = listOf(defaultCategoryLabel) + activeProducts
+    val availableCategories = listOf(defaultCategoryLabel) + allProducts
         .map { it.category.trim() }
         .filter { it.isNotBlank() }
         .distinctBy { it.lowercase() }
         .sorted()
+
     var selectedCategory by remember { mutableStateOf(defaultCategoryLabel) }
     var isCategoryDropdownExpanded by remember { mutableStateOf(false) }
 
-    val filteredActiveProducts = activeProducts.filter { product ->
+    val listToShow = if (!isAdmin || activeTab == 0) allProducts else deletedProducts
+
+    val filteredProducts = listToShow.filter { product ->
         val categoryMatch = selectedCategory == defaultCategoryLabel || product.category.equals(selectedCategory, ignoreCase = true)
         val searchMatch = product.name.contains(searchQuery, ignoreCase = true) || product.code.contains(searchQuery, ignoreCase = true)
         categoryMatch && searchMatch
     }
 
-    if (showDeleteDialog && productToDelete != null) {
+    if (showConfirmDialog && dialogAction != null) {
         AlertDialog(
-            onDismissRequest = { showDeleteDialog = false },
-            title = { Text("Confirmar Borrado") },
-            text = { Text("El producto '${productToDelete!!.name}' será archivado. Podrás restaurarlo más tarde.") },
+            onDismissRequest = { showConfirmDialog = false },
+            title = { Text("Confirmar") },
+            text = { Text(dialogText) },
             confirmButton = {
                 Button(
                     onClick = {
-                        productVm.deleteProduct(productToDelete!!)
-                        showDeleteDialog = false
-                    },
-                    colors = ButtonDefaults.buttonColors(containerColor = Color.Red)
-                ) { Text("Archivar") }
+                        dialogAction?.invoke()
+                        showConfirmDialog = false
+                    }
+                ) { Text("Aceptar") }
             },
-            dismissButton = { TextButton(onClick = { showDeleteDialog = false }) { Text("Cancelar") } }
+            dismissButton = {
+                TextButton(onClick = { showConfirmDialog = false }) { Text("Cancelar") }
+            }
         )
+    }
+
+    val snackbarHostState = remember { SnackbarHostState() }
+    LaunchedEffect(snackbarMessage) {
+        snackbarMessage?.let {
+            snackbarHostState.showSnackbar(it)
+            snackbarMessage = null
+        }
     }
 
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) }
-    ) {
-        Column(modifier = Modifier.fillMaxSize().padding(it).padding(horizontal = 16.dp)) {
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+    ) { innerPadding ->
+        Column(modifier = Modifier.fillMaxSize().padding(innerPadding).padding(16.dp)) {
+
+            // Tabs solo para ADMIN (Activos / Eliminados)
+            if (isAdmin) {
+                TabRow(selectedTabIndex = activeTab) {
+                    Tab(selected = activeTab == 0, onClick = { activeTab = 0 }, text = { Text("Activos") })
+                    Tab(selected = activeTab == 1, onClick = { activeTab = 1 }, text = { Text("Eliminados") })
+                }
+                Spacer(Modifier.height(12.dp))
+            }
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
                 OutlinedTextField(
                     value = searchQuery,
                     onValueChange = { searchQuery = it },
@@ -87,7 +121,12 @@ fun StockSearchScreen(
                     leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Buscar") },
                     modifier = Modifier.weight(1f)
                 )
-                ExposedDropdownMenuBox(expanded = isCategoryDropdownExpanded, onExpandedChange = { isCategoryDropdownExpanded = it }, modifier = Modifier.weight(0.8f)) {
+
+                ExposedDropdownMenuBox(
+                    expanded = isCategoryDropdownExpanded,
+                    onExpandedChange = { isCategoryDropdownExpanded = it },
+                    modifier = Modifier.weight(0.9f)
+                ) {
                     OutlinedTextField(
                         value = selectedCategory,
                         onValueChange = {},
@@ -96,7 +135,10 @@ fun StockSearchScreen(
                         trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = isCategoryDropdownExpanded) },
                         modifier = Modifier.menuAnchor()
                     )
-                    ExposedDropdownMenu(expanded = isCategoryDropdownExpanded, onDismissRequest = { isCategoryDropdownExpanded = false }) {
+                    ExposedDropdownMenu(
+                        expanded = isCategoryDropdownExpanded,
+                        onDismissRequest = { isCategoryDropdownExpanded = false }
+                    ) {
                         availableCategories.forEach { category ->
                             DropdownMenuItem(
                                 text = { Text(category) },
@@ -109,36 +151,59 @@ fun StockSearchScreen(
                     }
                 }
             }
-            Spacer(Modifier.height(8.dp))
-            Button(
-                onClick = {
-                    scope.launch {
-                        try {
-                            productVm.syncProducts()
-                            snackbarHostState.showSnackbar("Sincronización con el servidor completada.")
-                        } catch (e: Exception) {
-                            snackbarHostState.showSnackbar("Error durante la sincronización: ${e.message}")
-                        }
-                    }
-                },
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Icon(Icons.Default.Sync, contentDescription = "Sincronizar")
-                Spacer(Modifier.width(8.dp))
-                Text("Sincronizar con el Servidor")
-            }
+
             Spacer(Modifier.height(16.dp))
 
             LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                items(filteredActiveProducts, key = { "active-${it.id}" }) { product ->
+                items(filteredProducts) { product ->
                     ListItem(
                         headlineContent = { Text(product.name) },
-                        supportingContent = { Text("Código: ${product.code} | Categoría: ${product.category}") },
+                        supportingContent = {
+                            Text("Código: ${product.code} | Categoría: ${product.category} | Ubicación: ${product.zone}")
+                        },
                         trailingContent = {
                             Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text("Stock: ${product.stock}/${product.minStock}")
-                                IconButton(onClick = { productToDelete = product; showDeleteDialog = true }) {
-                                    Icon(Icons.Default.Delete, contentDescription = "Archivar", tint = Color.Gray)
+                                Text("Stock: ${product.stock}")
+                                Spacer(Modifier.width(8.dp))
+
+                                // Acciones:
+                                // - TRABAJADOR: solo ver (si intenta borrar, mostramos mensaje)
+                                // - ADMIN:
+                                //   - Activos: borrar (soft delete)
+                                //   - Eliminados: restaurar
+                                if (isAdmin) {
+                                    if (activeTab == 0) {
+                                        IconButton(
+                                            onClick = {
+                                                dialogText = "¿Eliminar '${product.name}'? (se podrá restaurar)"
+                                                dialogAction = {
+                                                    productVm.deleteRemote(product) { msg -> snackbarMessage = msg }
+                                                    productVm.refreshProducts()
+                                                }
+                                                showConfirmDialog = true
+                                            }
+                                        ) {
+                                            Icon(Icons.Default.Delete, contentDescription = "Eliminar", tint = Color.Gray)
+                                        }
+                                    } else {
+                                        IconButton(
+                                            onClick = {
+                                                dialogText = "¿Restaurar '${product.name}' a su último estado?"
+                                                dialogAction = {
+                                                    productVm.restoreRemote(product) { msg -> snackbarMessage = msg }
+                                                    productVm.loadDeletedProducts()
+                                                }
+                                                showConfirmDialog = true
+                                            }
+                                        ) {
+                                            Icon(Icons.Default.Restore, contentDescription = "Restaurar", tint = Color.Gray)
+                                        }
+                                    }
+                                } else {
+                                    // TRABAJADOR: mostramos el ícono, pero bloqueamos la acción
+                                    IconButton(onClick = { snackbarMessage = "No tienes permisos para realizar esta acción" }) {
+                                        Icon(Icons.Default.Delete, contentDescription = "Sin permisos", tint = Color.LightGray)
+                                    }
                                 }
                             }
                         },
@@ -146,51 +211,7 @@ fun StockSearchScreen(
                     )
                     Divider()
                 }
-
-                item(key = "archived-header") {
-                    Spacer(Modifier.height(24.dp))
-                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
-                        Text("Productos Borrados", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                        IconButton(onClick = { productVm.loadInactiveProducts() }) {
-                            Icon(Icons.Default.Refresh, contentDescription = "Refrescar lista de borrados")
-                        }
-                    }
-                    Divider(Modifier.padding(top = 8.dp))
-                }
-
-                if (uiState.isInactiveListLoading) {
-                    item { Box(modifier = Modifier.fillMaxWidth().padding(16.dp), contentAlignment = Alignment.Center) { CircularProgressIndicator() } }
-                } else if (uiState.inactiveListError != null) {
-                    item { Text(uiState.inactiveListError!!, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(16.dp)) }
-                } else if (uiState.inactiveProducts.isEmpty()) {
-                    item { Text("No hay productos borrados.", style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(16.dp)) }
-                } else {
-                    items(uiState.inactiveProducts, key = { "inactive-${it.remoteId}" }) { inactiveProduct ->
-                        ArchivedProductListItem(
-                            product = inactiveProduct,
-                            onRestore = { productVm.restoreProduct(inactiveProduct) }
-                        )
-                    }
-                }
             }
         }
     }
-}
-
-@Composable
-private fun ArchivedProductListItem(
-    product: ProductEntity,
-    onRestore: () -> Unit
-) {
-    ListItem(
-        colors = ListItemDefaults.colors(containerColor = Color.Transparent),
-        headlineContent = { Text(product.name, color = Color.Gray) },
-        supportingContent = { Text("Código: ${product.code}", color = Color.Gray) },
-        trailingContent = {
-            IconButton(onClick = onRestore) {
-                Icon(Icons.Default.RestoreFromTrash, contentDescription = "Restaurar", tint = MaterialTheme.colorScheme.primary)
-            }
-        }
-    )
-    Divider()
 }

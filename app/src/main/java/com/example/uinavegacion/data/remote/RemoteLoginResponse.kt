@@ -1,10 +1,6 @@
 package com.example.uinavegacion.data.remote
 
-/**
- * Respuesta del backend al hacer login.
- * Coincide con LoginResponse (Spring Boot).
- */
-data class RemoteUserResponse(
+data class RemoteLoginResponse(
     val username: String,
     val email: String,
     val role: String,

@@ -1,90 +1,109 @@
 package com.example.uinavegacion.ui.screen
 
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import com.example.uinavegacion.viewmodel.AuthViewModel
 import com.example.uinavegacion.viewmodel.UserRole
-import kotlinx.coroutines.launch
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RegisterScreen(
     authVm: AuthViewModel,
-    onLogin: () -> Unit
+    onBack: () -> Unit, // se mantiene para no romper NavGraph
+    onGoLogin: (() -> Unit)? = null
 ) {
     var username by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
-    val scope = rememberCoroutineScope()
-    val snackbarHostState = remember { SnackbarHostState() }
+    var showPassword by remember { mutableStateOf(false) }
 
-    Scaffold(
-        snackbarHost = { SnackbarHost(snackbarHostState) }
+    var registrationMessage by remember { mutableStateOf("") }
+
+    val isFormValid = username.isNotBlank() && email.isNotBlank() && password.isNotBlank()
+
+    // ❌ SIN Scaffold
+    // ❌ SIN TopAppBar
+    // ✅ La barra morada viene desde el NavGraph
+    Column(
+        modifier = Modifier
+            .padding(24.dp)
+            .fillMaxSize()
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(it)
-                .padding(32.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
-        ) {
-            Text("Registro de Nuevo Usuario", style = MaterialTheme.typography.headlineMedium)
-            Spacer(Modifier.height(32.dp))
+        Spacer(Modifier.height(24.dp))
 
-            OutlinedTextField(
-                value = username,
-                onValueChange = { username = it },
-                label = { Text("Nombre de Usuario") },
-                modifier = Modifier.fillMaxWidth()
-            )
-            Spacer(Modifier.height(16.dp))
+        OutlinedTextField(
+            value = username,
+            onValueChange = { username = it },
+            label = { Text("Nombre de Usuario") },
+            modifier = Modifier.fillMaxWidth()
+        )
+        Spacer(Modifier.height(12.dp))
 
-            OutlinedTextField(
-                value = email,
-                onValueChange = { email = it },
-                label = { Text("Email") },
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
-                modifier = Modifier.fillMaxWidth()
-            )
-            Spacer(Modifier.height(16.dp))
+        OutlinedTextField(
+            value = email,
+            onValueChange = { email = it },
+            label = { Text("Email") },
+            modifier = Modifier.fillMaxWidth()
+        )
+        Spacer(Modifier.height(12.dp))
 
-            OutlinedTextField(
-                value = password,
-                onValueChange = { password = it },
-                label = { Text("Contraseña") },
-                visualTransformation = PasswordVisualTransformation(),
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-                modifier = Modifier.fillMaxWidth()
-            )
-            Spacer(Modifier.height(32.dp))
-
-            Button(onClick = {
-                authVm.register(username, email, password, UserRole.TRABAJADOR) { success ->
-                    scope.launch {
-                        if (success) {
-                            snackbarHostState.showSnackbar("Usuario registrado con éxito")
-                            onLogin()
-                        } else {
-                            snackbarHostState.showSnackbar("Error: El usuario ya existe o los datos son inválidos")
-                        }
-                    }
+        OutlinedTextField(
+            value = password,
+            onValueChange = { password = it },
+            label = { Text("Contraseña") },
+            modifier = Modifier.fillMaxWidth(),
+            visualTransformation = if (showPassword) VisualTransformation.None else PasswordVisualTransformation(),
+            trailingIcon = {
+                IconButton(onClick = { showPassword = !showPassword }) {
+                    Icon(
+                        imageVector = if (showPassword) Icons.Default.VisibilityOff else Icons.Default.Visibility,
+                        contentDescription = "Mostrar/Ocultar contraseña"
+                    )
                 }
-            }, modifier = Modifier.fillMaxWidth()) {
-                Text("Crear Cuenta")
             }
+        )
 
+        Spacer(Modifier.height(32.dp))
+
+        Button(
+            onClick = {
+                authVm.register(
+                    username = username,
+                    email = email,
+                    pass = password,
+                    role = UserRole.TRABAJADOR
+                ) { success ->
+                    registrationMessage =
+                        if (success) "¡Registro exitoso!"
+                        else "El usuario ya existe."
+                }
+            },
+            enabled = isFormValid,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text("Registrar Usuario")
+        }
+
+        if (registrationMessage.isNotBlank()) {
+            Spacer(Modifier.height(12.dp))
+            Text(registrationMessage)
+        }
+
+        if (onGoLogin != null) {
             Spacer(Modifier.height(16.dp))
-
-            TextButton(onClick = onLogin) {
-                Text("¿Ya tienes cuenta? Inicia Sesión")
+            TextButton(
+                onClick = onGoLogin,
+                modifier = Modifier.align(Alignment.CenterHorizontally) // ✅ CENTRADO CORRECTO
+            ) {
+                Text("¿Ya tienes cuenta? Inicia sesión")
             }
         }
     }
